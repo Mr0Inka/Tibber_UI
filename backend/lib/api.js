@@ -96,6 +96,83 @@ class API {
             }
         });
 
+        this.app.get('/api/power/today/1m', async (req, res) => {
+            try {
+                const now = new Date();
+                const start = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+                const stop = new Date().toISOString();
+                console.log(`📊 Fetching 1-minute power data from ${start} to ${stop}`);
+                const data = await this.influxLogger.getPowerHistory(start, stop, '1m');
+                console.log(`📊 Retrieved ${data.length} 1-minute power data points`);
+                res.json({ success: true, data });
+            } catch (error) {
+                console.error('❌ Error fetching 1-minute power data:', error);
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Flexible power endpoint with time range and interval parameters
+        // Usage: /api/power?range=5m&interval=1m
+        // Range options: 5m, 1h, 3h, 12h, 24h
+        // Interval options: 1m, 5m, 15m, 30m, 1h (or any valid Flux duration)
+        this.app.get('/api/power', async (req, res) => {
+            try {
+                const { range = '1h', interval = '1m' } = req.query;
+
+                // Validate range parameter
+                const validRanges = ['5m', '1h', '3h', '12h', '24h'];
+                if (!validRanges.includes(range)) {
+                    return res.status(400).json({
+                        success: false,
+                        error: `Invalid range. Must be one of: ${validRanges.join(', ')}`
+                    });
+                }
+
+                // Calculate start time based on range
+                const now = new Date();
+                let start;
+                switch (range) {
+                    case '5m':
+                        start = new Date(now.getTime() - 5 * 60 * 1000);
+                        break;
+                    case '1h':
+                        start = new Date(now.getTime() - 60 * 60 * 1000);
+                        break;
+                    case '3h':
+                        start = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+                        break;
+                    case '12h':
+                        start = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+                        break;
+                    case '24h':
+                        start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                        break;
+                }
+
+                const startISO = start.toISOString();
+                const stopISO = now.toISOString();
+
+                console.log(`📊 Fetching power data: range=${range}, interval=${interval}, from ${startISO} to ${stopISO}`);
+                const data = await this.influxLogger.getPowerHistory(startISO, stopISO, interval);
+                console.log(`📊 Retrieved ${data.length} power data points`);
+
+                res.json({
+                    success: true,
+                    data,
+                    meta: {
+                        range,
+                        interval,
+                        start: startISO,
+                        stop: stopISO,
+                        count: data.length
+                    }
+                });
+            } catch (error) {
+                console.error('❌ Error fetching power data:', error);
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
         this.app.get('/api/power/week', async (req, res) => {
             try {
                 const now = new Date();
@@ -131,6 +208,21 @@ class API {
                 res.json({ success: true, data });
             } catch (error) {
                 console.error('❌ Error fetching hourly energy data:', error);
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        this.app.get('/api/energy/today/1m', async (req, res) => {
+            try {
+                const now = new Date();
+                const start = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+                const stop = new Date().toISOString();
+                console.log(`📊 Fetching 1-minute energy data from ${start} to ${stop}`);
+                const data = await this.influxLogger.getEnergyHistory(start, stop, '1m');
+                console.log(`📊 Retrieved ${data.length} 1-minute data points`);
+                res.json({ success: true, data });
+            } catch (error) {
+                console.error('❌ Error fetching 1-minute energy data:', error);
                 res.status(500).json({ success: false, error: error.message });
             }
         });
