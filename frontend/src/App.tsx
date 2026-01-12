@@ -20,30 +20,41 @@ interface ApiResponse {
 const getApiUrl = () => {
   const hostname = window.location.hostname
   
-  // If explicitly set in env and it's not localhost, use that
-  // But if env is localhost and we're accessing from a different hostname, auto-detect instead
+  // Priority 1: If VITE_API_URL is explicitly set, use it
+  // Exception: If it's set to localhost but we're accessing from elsewhere, use auto-detection
   if (import.meta.env.VITE_API_URL) {
-    const envUrl = import.meta.env.VITE_API_URL
-    // If env URL is localhost but we're not on localhost, use auto-detection
-    if (envUrl.includes('localhost') && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    const envUrl = import.meta.env.VITE_API_URL.trim()
+    // If env URL is localhost/127.0.0.1 but we're not on localhost, use auto-detection
+    const isLocalhostUrl = envUrl.includes('localhost') || envUrl.includes('127.0.0.1')
+    if (isLocalhostUrl && hostname !== 'localhost' && hostname !== '127.0.0.1') {
       // Fall through to auto-detection
     } else {
+      // Use the explicit URL from env (works for development: laptop frontend → Pi backend)
       return envUrl
     }
   }
   
-  // Auto-detect: if accessing from localhost, use localhost for API
-  // Otherwise, use the same hostname (works for IP addresses)
+  // Priority 2: Auto-detect based on where frontend is accessed from
+  // If accessing from localhost, use localhost for API
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://localhost:3000'
   }
   
-  // Use the same hostname but port 3000 for API
-  // This works when accessing frontend via Pi's IP - it will use the same IP for API
+  // Otherwise, use the same hostname/IP for API
+  // This works when accessing frontend via Pi's IP/hostname - it will use the same for API
   return `http://${hostname}:3000`
 }
 
 const API_URL = getApiUrl()
+
+// Debug logging (remove in production if desired)
+if (import.meta.env.DEV) {
+  console.log('API URL Configuration:', {
+    'VITE_API_URL from env': import.meta.env.VITE_API_URL,
+    'window.location.hostname': window.location.hostname,
+    'Final API_URL': API_URL
+  })
+}
 
 interface HourlyData {
   hour: number
