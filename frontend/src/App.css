@@ -1,16 +1,12 @@
 .app {
-  max-width: 600px;
+  max-width: 500px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1rem;
   min-height: 100vh;
 }
 
 .content {
-  background: white;
-  border-radius: 16px;
-  padding: 2.5rem 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: visible;
+  padding: 0;
 }
 
 .page {
@@ -33,10 +29,6 @@
 
 @media (max-width: 640px) {
   .app {
-    padding: 1rem;
-  }
-
-  .content {
-    padding: 2rem 1.5rem;
+    padding: 0.75rem;
   }
 }

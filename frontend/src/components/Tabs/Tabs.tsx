@@ -12,12 +12,14 @@ export function Tabs({ activeTab, onTabChange }: TabsProps) {
     <div className="tabs-container">
       <div className="tabs">
         <button
+          type="button"
           className={`tab ${activeTab === 'today' ? 'active' : ''}`}
           onClick={() => onTabChange('today')}
         >
           Today
         </button>
         <button
+          type="button"
           className={`tab ${activeTab === 'month' ? 'active' : ''}`}
           onClick={() => onTabChange('month')}
         >

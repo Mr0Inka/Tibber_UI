@@ -4,7 +4,7 @@ import { PowerGraph } from '../../components/PowerGraph/PowerGraph'
 import type { PowerData, PowerHistoryData } from '../../types'
 import './TodayPage.css'
 
-type TimeRange = '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
+type TimeRange = '1m' | '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
 
 interface TodayPageProps {
   power: PowerData
@@ -35,10 +35,6 @@ export function TodayPage({
       
       {/* Power Graph */}
       <div className="power-graph-container">
-        <GraphControls 
-          selectedRange={graphRange} 
-          onRangeChange={onRangeChange} 
-        />
         <div className="power-graph">
           {graphLoading ? (
             <div className="graph-loading">Loading...</div>
@@ -48,6 +44,10 @@ export function TodayPage({
             <div className="graph-empty">No data available</div>
           )}
         </div>
+        <GraphControls 
+          selectedRange={graphRange} 
+          onRangeChange={onRangeChange} 
+        />
       </div>
     </div>
   )

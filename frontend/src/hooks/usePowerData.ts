@@ -2,17 +2,18 @@ import { useState, useEffect, useCallback } from 'react'
 import type { PowerData, PowerHistoryData, HourlyData, EnergyData, ApiResponse } from '../types'
 import { API_URL } from '../config/api'
 
-type TimeRange = '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
+type TimeRange = '1m' | '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
 
 // Get suitable interval for each time range
 const getIntervalForRange = (range: TimeRange): string => {
   switch (range) {
+    case '1m': return '1s' // All live values
     case '5m': return '1s' // All live values (1 second intervals)
     case '30m': return '10s'
     case '1h': return '30s'
     case '6h': return '1m'
-    case '12h': return '5m'
-    case '24h': return '10m'
+    case '12h': return '2m'
+    case '24h': return '5m'
   }
 }
 

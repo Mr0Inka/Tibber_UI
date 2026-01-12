@@ -20,31 +20,27 @@ export function PowerGraph({ data }: PowerGraphProps) {
   if (data.length === 0) return null
 
   const width = 800
-  const height = 300
-  const padding = { top: 20, right: 20, bottom: 40, left: 20 }
+  const height = 750
+  const padding = { top: 20, right: 10, bottom: 10, left: 10 }
   const chartWidth = width - padding.left - padding.right
   const chartHeight = height - padding.top - padding.bottom
 
   const values = data.map(d => d.value)
-  const maxValue = Math.max(...values, 1)
-  const minValue = Math.min(...values, 0)
+  const highestValue = Math.max(...values, 0)
+  
+  // Always start at 0, minimum range of 100W, add 100W headroom above highest value
+  const maxValue = Math.max(highestValue + 100, 100)
 
   // Create SVG path for the line
   const points = data.map((d, i) => {
     const x = (i / (data.length - 1)) * chartWidth
-    const y = chartHeight - ((d.value - minValue) / (maxValue - minValue || 1)) * chartHeight
+    const y = chartHeight - (d.value / maxValue) * chartHeight
     return { x, y, value: d.value, timestamp: d.timestamp }
   })
 
   const pathData = points.map((p, i) => 
     `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
   ).join(' ')
-
-  // Format timestamp for x-axis labels
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp)
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-  }
 
   // Format timestamp for hover display
   const formatHoverTime = (timestamp: string) => {
@@ -55,19 +51,18 @@ export function PowerGraph({ data }: PowerGraphProps) {
   // Y-axis grid lines (without labels)
   const yTicks = 5
   const yLabels = Array.from({ length: yTicks }, (_, i) => {
-    const value = minValue + (maxValue - minValue) * (i / (yTicks - 1))
-    return value
+    return (maxValue * i) / (yTicks - 1)
   })
 
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+  const updateHoverFromPosition = (clientX: number) => {
     if (!svgRef.current || data.length === 0) return
 
     const rect = svgRef.current.getBoundingClientRect()
     const scaleX = width / rect.width
-    const mouseX = (e.clientX - rect.left) * scaleX - padding.left
+    const posX = (clientX - rect.left) * scaleX - padding.left
 
     // Find the closest data point
-    const dataIndex = Math.round((mouseX / chartWidth) * (data.length - 1))
+    const dataIndex = Math.round((posX / chartWidth) * (data.length - 1))
     const clampedIndex = Math.max(0, Math.min(data.length - 1, dataIndex))
     const point = points[clampedIndex]
 
@@ -81,7 +76,23 @@ export function PowerGraph({ data }: PowerGraphProps) {
     }
   }
 
-  const handleMouseLeave = () => {
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    updateHoverFromPosition(e.clientX)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (e.touches.length > 0) {
+      updateHoverFromPosition(e.touches[0].clientX)
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (e.touches.length > 0) {
+      updateHoverFromPosition(e.touches[0].clientX)
+    }
+  }
+
+  const handleLeave = () => {
     setHoverData(null)
   }
 
@@ -95,17 +106,19 @@ export function PowerGraph({ data }: PowerGraphProps) {
             <span className="hover-time">{formatHoverTime(hoverData.timestamp)}</span>
           </>
         ) : (
-          <span className="hover-placeholder">Hover to see values</span>
+          <span className="hover-placeholder">Touch graph to see values</span>
         )}
       </div>
 
       <svg 
         ref={svgRef}
-        width={width} 
-        height={height} 
+        viewBox={`0 0 ${width} ${height}`}
         className="power-graph-svg"
         onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        onMouseLeave={handleLeave}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleLeave}
       >
         <defs>
           <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -166,7 +179,7 @@ export function PowerGraph({ data }: PowerGraphProps) {
               <circle
                 cx={hoverData.x}
                 cy={hoverData.y}
-                r={5}
+                r={6}
                 fill="#646cff"
                 stroke="white"
                 strokeWidth={2}
@@ -175,41 +188,14 @@ export function PowerGraph({ data }: PowerGraphProps) {
             </>
           )}
 
-          {/* Invisible overlay for better hover detection */}
+          {/* Invisible overlay for better touch/hover detection */}
           <rect
             x={0}
             y={0}
             width={chartWidth}
             height={chartHeight}
             fill="transparent"
-            style={{ cursor: 'crosshair' }}
           />
-
-          {/* X-axis labels */}
-          {data.length > 0 && (
-            <>
-              <text
-                x={0}
-                y={chartHeight + 20}
-                textAnchor="start"
-                fontSize="11"
-                fill="#888"
-              >
-                {formatTime(data[0].timestamp)}
-              </text>
-              {data.length > 1 && (
-                <text
-                  x={chartWidth}
-                  y={chartHeight + 20}
-                  textAnchor="end"
-                  fontSize="11"
-                  fill="#888"
-                >
-                  {formatTime(data[data.length - 1].timestamp)}
-                </text>
-              )}
-            </>
-          )}
         </g>
       </svg>
     </div>

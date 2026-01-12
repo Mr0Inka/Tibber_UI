@@ -6,7 +6,7 @@ import { usePowerData } from './hooks/usePowerData'
 import './App.css'
 
 type TabType = 'today' | 'month'
-type TimeRange = '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
+type TimeRange = '1m' | '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('today')

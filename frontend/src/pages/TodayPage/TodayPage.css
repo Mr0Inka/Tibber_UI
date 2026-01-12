@@ -1,18 +1,15 @@
 .power-graph-container {
-  margin-top: 3rem;
-  padding-top: 2rem;
-  border-top: 1px solid #e5e5e5;
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .power-graph {
-  background: white;
-  border-radius: 8px;
-  padding: 1rem;
-  min-height: 300px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow-x: auto;
 }
 
 .graph-loading,
