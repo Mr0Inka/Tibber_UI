@@ -1,0 +1,31 @@
+.graph-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.range-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e5e5;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.range-button:hover {
+  background: #f5f5f5;
+  border-color: #646cff;
+  color: #646cff;
+}
+
+.range-button.active {
+  background: #646cff;
+  border-color: #646cff;
+  color: white;
+}

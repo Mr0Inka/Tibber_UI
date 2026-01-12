@@ -1,0 +1,13 @@
+.power-graph-svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.graph-point {
+  transition: r 0.2s ease;
+}
+
+.graph-point:hover {
+  r: 5;
+}
