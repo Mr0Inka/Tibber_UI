@@ -1,4 +1,4 @@
-import { HourlyData } from '../../types'
+import type { HourlyData } from '../../types'
 import './HourlyChart.css'
 
 interface HourlyChartProps {

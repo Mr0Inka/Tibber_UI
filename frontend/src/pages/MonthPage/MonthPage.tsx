@@ -1,5 +1,5 @@
 import { PowerDisplay } from '../../components/PowerDisplay/PowerDisplay'
-import { PowerData } from '../../types'
+import type { PowerData } from '../../types'
 import './MonthPage.css'
 
 interface MonthPageProps {

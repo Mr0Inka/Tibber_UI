@@ -1,13 +1,47 @@
+.power-graph-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.hover-info {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.hover-value {
+  font-weight: 600;
+  font-size: 18px;
+  color: #646cff;
+  font-variant-numeric: tabular-nums;
+}
+
+.hover-time {
+  color: #888;
+  font-variant-numeric: tabular-nums;
+}
+
+.hover-placeholder {
+  color: #aaa;
+  font-size: 13px;
+}
+
 .power-graph-svg {
   max-width: 100%;
   height: auto;
   display: block;
 }
 
-.graph-point {
-  transition: r 0.2s ease;
+.hover-line {
+  pointer-events: none;
 }
 
-.graph-point:hover {
-  r: 5;
+.hover-point {
+  pointer-events: none;
+  transition: r 0.1s ease;
 }

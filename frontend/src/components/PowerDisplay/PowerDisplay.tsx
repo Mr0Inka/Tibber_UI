@@ -1,4 +1,4 @@
-import { PowerData } from '../../types'
+import type { PowerData } from '../../types'
 import './PowerDisplay.css'
 
 interface PowerDisplayProps {

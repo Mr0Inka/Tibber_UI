@@ -3,10 +3,10 @@ import { Tabs } from './components/Tabs/Tabs'
 import { TodayPage } from './pages/TodayPage/TodayPage'
 import { MonthPage } from './pages/MonthPage/MonthPage'
 import { usePowerData } from './hooks/usePowerData'
-import { TimeRange } from './types'
 import './App.css'
 
 type TabType = 'today' | 'month'
+type TimeRange = '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('today')

@@ -1,7 +1,7 @@
 import { PowerDisplay } from '../../components/PowerDisplay/PowerDisplay'
 import { GraphControls } from '../../components/GraphControls/GraphControls'
 import { PowerGraph } from '../../components/PowerGraph/PowerGraph'
-import { PowerData, PowerHistoryData } from '../../types'
+import type { PowerData, PowerHistoryData } from '../../types'
 import './TodayPage.css'
 
 type TimeRange = '5m' | '30m' | '1h' | '6h' | '12h' | '24h'

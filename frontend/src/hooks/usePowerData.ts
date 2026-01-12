@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { PowerData, PowerHistoryData, HourlyData, EnergyData, ApiResponse } from '../types'
+import type { PowerData, PowerHistoryData, HourlyData, EnergyData, ApiResponse } from '../types'
 import { API_URL } from '../config/api'
 
 type TimeRange = '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
