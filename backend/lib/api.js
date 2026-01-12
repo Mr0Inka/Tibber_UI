@@ -147,6 +147,24 @@ class API {
             }
         });
 
+        this.app.get('/api/energy/daily/12months', async (req, res) => {
+            try {
+                const now = new Date();
+                // Calculate start date: 12 months ago at midnight
+                const start = new Date(now.getFullYear(), now.getMonth() - 12, 1, 0, 0, 0, 0);
+                // End date: end of yesterday (last full day)
+                const stop = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+
+                console.log(`📊 Fetching daily energy data from ${start.toISOString()} to ${stop.toISOString()}`);
+                const data = await this.influxLogger.getDailyEnergyHistory(start.toISOString(), stop.toISOString());
+                console.log(`📊 Retrieved ${data.length} daily data points`);
+                res.json({ success: true, data });
+            } catch (error) {
+                console.error('❌ Error fetching daily energy data:', error);
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
         // Health check
         this.app.get('/api/health', (req, res) => {
             res.json({

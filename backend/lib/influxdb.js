@@ -162,6 +162,49 @@ class InfluxDBLogger {
         });
     }
 
+    async getDailyEnergyHistory(start, stop) {
+        if (!this.connected || !this.queryApi) {
+            throw new Error('InfluxDB not connected');
+        }
+
+        // Get power data and calculate daily energy (kWh) from it
+        // Calculate energy by integrating power over time, grouped by day
+        const query = `
+            from(bucket: "${config.influxdb.bucket}")
+            |> range(start: ${start}, stop: ${stop})
+            |> filter(fn: (r) => r._measurement == "Power")
+            |> filter(fn: (r) => r._field == "value")
+            |> aggregateWindow(every: 1d, fn: mean, createEmpty: false)
+            |> map(fn: (r) => ({ r with _value: r._value / 1000.0 }))
+            |> group(columns: ["_start", "_stop", "_field", "_measurement"])
+            |> integral(unit: 1h)
+            |> yield(name: "daily")
+        `;
+
+        return new Promise((resolve, reject) => {
+            const results = [];
+            this.queryApi.queryRows(query, {
+                next(row, tableMeta) {
+                    const obj = tableMeta.toObject(row);
+                    const value = obj._value;
+                    if (value !== null && value !== undefined && !isNaN(value)) {
+                        results.push({
+                            value: value,
+                            timestamp: obj._time
+                        });
+                    }
+                },
+                error(error) {
+                    console.error('InfluxDB daily energy query error:', error);
+                    reject(error);
+                },
+                complete() {
+                    resolve(results);
+                }
+            });
+        });
+    }
+
     disconnect() {
         if (this.writeApi) {
             this.writeApi.close();
