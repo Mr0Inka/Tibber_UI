@@ -18,19 +18,28 @@ interface ApiResponse {
 
 // Auto-detect API URL based on where the frontend is accessed from
 const getApiUrl = () => {
-  // If explicitly set in env, use that
+  const hostname = window.location.hostname
+  
+  // If explicitly set in env and it's not localhost, use that
+  // But if env is localhost and we're accessing from a different hostname, auto-detect instead
   if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL
+    const envUrl = import.meta.env.VITE_API_URL
+    // If env URL is localhost but we're not on localhost, use auto-detection
+    if (envUrl.includes('localhost') && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      // Fall through to auto-detection
+    } else {
+      return envUrl
+    }
   }
   
   // Auto-detect: if accessing from localhost, use localhost for API
   // Otherwise, use the same hostname (works for IP addresses)
-  const hostname = window.location.hostname
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://localhost:3000'
   }
   
   // Use the same hostname but port 3000 for API
+  // This works when accessing frontend via Pi's IP - it will use the same IP for API
   return `http://${hostname}:3000`
 }
 
