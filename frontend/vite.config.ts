@@ -7,5 +7,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0', // Listen on all network interfaces
     port: 5173, // Default Vite port (or your configured port)
+    allowedHosts: true, // Allow all hostnames (IPs, hostnames, .local domains, etc.)
+    // This is safe for local network development
   },
 })
