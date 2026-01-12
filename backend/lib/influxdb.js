@@ -1,0 +1,174 @@
+const { InfluxDB, Point } = require('@influxdata/influxdb-client');
+const config = require('./config');
+
+class InfluxDBLogger {
+    constructor() {
+        this.client = null;
+        this.writeApi = null;
+        this.queryApi = null;
+        this.connected = false;
+    }
+
+    connect() {
+        try {
+            const url = config.influxdb.url;
+            const token = config.influxdb.token;
+            const org = config.influxdb.org;
+            const bucket = config.influxdb.bucket;
+
+            this.client = new InfluxDB({ url, token });
+            this.writeApi = this.client.getWriteApi(org, bucket, 'ms');
+            this.queryApi = this.client.getQueryApi(org);
+            
+            this.connected = true;
+            console.log('💾 InfluxDB connected');
+        } catch (error) {
+            console.error('❌ InfluxDB connection failed:', error.message);
+            this.connected = false;
+        }
+    }
+
+    logPower(power, timestamp = null) {
+        if (!this.connected || !this.writeApi) {
+            return;
+        }
+
+        // Check that power is a number
+        if (typeof power !== 'number' || isNaN(power)) {
+            console.warn('⚠️  Invalid power value:', power);
+            return;
+        }
+
+        try {
+            const point = new Point('Power')
+                .floatField('value', power)
+                .timestamp(timestamp ? new Date(timestamp) : new Date());
+
+            this.writeApi.writePoint(point);
+            this.writeApi.flush();
+        } catch (error) {
+            console.error('❌ InfluxDB write error:', error.message);
+        }
+    }
+
+    async getCurrentPower() {
+        if (!this.connected || !this.queryApi) {
+            throw new Error('InfluxDB not connected');
+        }
+
+        const query = `
+            from(bucket: "${config.influxdb.bucket}")
+            |> range(start: -1h)
+            |> filter(fn: (r) => r._measurement == "Power")
+            |> filter(fn: (r) => r._field == "value")
+            |> last()
+        `;
+
+        return new Promise((resolve, reject) => {
+            const results = [];
+            this.queryApi.queryRows(query, {
+                next(row, tableMeta) {
+                    const obj = tableMeta.toObject(row);
+                    results.push({
+                        value: obj._value,
+                        timestamp: obj._time
+                    });
+                },
+                error(error) {
+                    reject(error);
+                },
+                complete() {
+                    resolve(results[0] || null);
+                }
+            });
+        });
+    }
+
+    async getPowerHistory(start, stop, interval = '1m') {
+        if (!this.connected || !this.queryApi) {
+            throw new Error('InfluxDB not connected');
+        }
+
+        const query = `
+            from(bucket: "${config.influxdb.bucket}")
+            |> range(start: ${start}, stop: ${stop})
+            |> filter(fn: (r) => r._measurement == "Power")
+            |> filter(fn: (r) => r._field == "value")
+            |> aggregateWindow(every: ${interval}, fn: mean, createEmpty: false)
+            |> yield(name: "mean")
+        `;
+
+        return new Promise((resolve, reject) => {
+            const results = [];
+            this.queryApi.queryRows(query, {
+                next(row, tableMeta) {
+                    const obj = tableMeta.toObject(row);
+                    results.push({
+                        value: obj._value,
+                        timestamp: obj._time
+                    });
+                },
+                error(error) {
+                    reject(error);
+                },
+                complete() {
+                    resolve(results);
+                }
+            });
+        });
+    }
+
+    async getEnergyHistory(start, stop, interval = '1h') {
+        if (!this.connected || !this.queryApi) {
+            throw new Error('InfluxDB not connected');
+        }
+
+        // Get power data and calculate cumulative energy (kWh) from it
+        // Calculate energy by integrating power over time
+        const query = `
+            from(bucket: "${config.influxdb.bucket}")
+            |> range(start: ${start}, stop: ${stop})
+            |> filter(fn: (r) => r._measurement == "Power")
+            |> filter(fn: (r) => r._field == "value")
+            |> aggregateWindow(every: ${interval}, fn: mean, createEmpty: false)
+            |> map(fn: (r) => ({ r with _value: r._value / 1000.0 }))
+            |> group(columns: ["_start", "_stop", "_field", "_measurement"])
+            |> integral(unit: 1h)
+            |> yield(name: "mean")
+        `;
+
+        return new Promise((resolve, reject) => {
+            const results = [];
+            this.queryApi.queryRows(query, {
+                next(row, tableMeta) {
+                    const obj = tableMeta.toObject(row);
+                    const value = obj._value;
+                    if (value !== null && value !== undefined && !isNaN(value)) {
+                        results.push({
+                            value: value,
+                            timestamp: obj._time
+                        });
+                    }
+                },
+                error(error) {
+                    console.error('InfluxDB energy query error:', error);
+                    reject(error);
+                },
+                complete() {
+                    // If no results, return empty array
+                    resolve(results);
+                }
+            });
+        });
+    }
+
+    disconnect() {
+        if (this.writeApi) {
+            this.writeApi.close();
+            this.connected = false;
+            console.log('💾 InfluxDB disconnected');
+        }
+    }
+}
+
+module.exports = InfluxDBLogger;
