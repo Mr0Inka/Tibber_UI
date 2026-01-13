@@ -225,19 +225,13 @@ class InfluxDBLogger {
 
         // Get mean power per day and calculate kWh
         // Energy (kWh) = mean_power (W) / 1000 * 24 hours
-        // Use truncateTimeColumn to get the day start as timestamp
         const query = `
-            import "date"
-            
             from(bucket: "${config.influxdb.bucket}")
             |> range(start: ${start}, stop: ${stop})
             |> filter(fn: (r) => r._measurement == "Power")
             |> filter(fn: (r) => r._field == "value")
-            |> window(every: 1d, createEmpty: false)
-            |> mean()
-            |> duplicate(column: "_stop", as: "_time")
+            |> aggregateWindow(every: 1d, fn: mean, createEmpty: false)
             |> map(fn: (r) => ({ r with _value: r._value / 1000.0 * 24.0 }))
-            |> window(every: inf)
         `;
 
         return new Promise((resolve, reject) => {
@@ -246,7 +240,7 @@ class InfluxDBLogger {
                 next(row, tableMeta) {
                     const obj = tableMeta.toObject(row);
                     const value = obj._value;
-                    console.log(`📊 Day entry: ${obj._time} = ${value} kWh`);
+                    console.log(`📊 Day entry: ${obj._time} = ${value?.toFixed(2)} kWh`);
                     if (value !== null && value !== undefined && !isNaN(value)) {
                         results.push({
                             value: value,

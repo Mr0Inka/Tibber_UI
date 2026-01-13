@@ -358,8 +358,8 @@ class API {
                 const now = new Date();
                 // Calculate start date: 12 months ago at midnight
                 const start = new Date(now.getFullYear(), now.getMonth() - 12, 1, 0, 0, 0, 0);
-                // End date: end of yesterday (last full day)
-                const stop = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+                // End date: now (include today's partial data)
+                const stop = now;
 
                 console.log(`📊 Fetching daily energy data from ${start.toISOString()} to ${stop.toISOString()}`);
                 const data = await this.influxLogger.getDailyEnergyHistory(start.toISOString(), stop.toISOString());

@@ -105,16 +105,25 @@
   margin-top: 8px;
 }
 
-.day-value.has-data {
+/* Today: solid orange background */
+.day-value.today {
   background: #f97316;
   color: white;
 }
 
-.day-value.past-no-data {
-  background: #d1d5db;
-  color: #666;
+/* Past days with data: light grey background, orange text */
+.day-value.past-has-data {
+  background: #f3f4f6;
+  color: #f97316;
 }
 
+/* Past days without data: greyed out */
+.day-value.past-no-data {
+  background: #e5e7eb;
+  color: #999;
+}
+
+/* Future days: greyed out, no value */
 .day-value.future {
   background: #e5e7eb;
   color: transparent;

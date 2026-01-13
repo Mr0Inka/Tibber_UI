@@ -69,6 +69,12 @@ export function MonthCalendar({ year, month, dailyData }: MonthCalendarProps) {
     const dayDate = new Date(year, month, day)
     return dayDate < new Date(today.getFullYear(), today.getMonth(), today.getDate())
   }
+  
+  // Check if day is today
+  const isToday = (day: number): boolean => {
+    const today = new Date()
+    return year === today.getFullYear() && month === today.getMonth() && day === today.getDate()
+  }
 
   return (
     <div className="month-calendar">
@@ -94,15 +100,30 @@ export function MonthCalendar({ year, month, dailyData }: MonthCalendarProps) {
                 return <div key={dayIndex} className="day-cell empty" />
               }
               
+              const today = isToday(day)
               const isPast = isPastDay(day)
               const hasData = hasDataForDay(day)
               const value = getDayValue(day)
               
+              // Determine CSS class:
+              // - today: orange background
+              // - past with data: white with orange stroke
+              // - past without data: greyed out
+              // - future: greyed out
+              let valueClass = 'future'
+              if (today) {
+                valueClass = 'today'
+              } else if (isPast && hasData) {
+                valueClass = 'past-has-data'
+              } else if (isPast) {
+                valueClass = 'past-no-data'
+              }
+              
               return (
                 <div key={dayIndex} className="day-cell">
                   <span className="day-number">{day}</span>
-                  <div className={`day-value ${hasData ? 'has-data' : isPast ? 'past-no-data' : 'future'}`}>
-                    {isPast ? value.toFixed(2) : ''}
+                  <div className={`day-value ${valueClass}`}>
+                    {(today || isPast) ? value.toFixed(2) : ''}
                   </div>
                 </div>
               )
@@ -122,18 +143,14 @@ export function MonthCalendarList({ dailyEnergyHistory }: MonthCalendarListProps
   // Create a map of date -> value for quick lookup
   const dailyDataMap = new Map<string, number>()
   dailyEnergyHistory.forEach(entry => {
-    // Parse as UTC to match InfluxDB timestamps
+    // InfluxDB aggregateWindow returns timestamp at END of window
+    // So we need to subtract 1 day to get the actual day
     const date = new Date(entry.timestamp)
-    // Use UTC date components since InfluxDB returns UTC timestamps
+    date.setUTCDate(date.getUTCDate() - 1)
     const dateKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`
     dailyDataMap.set(dateKey, entry.value)
+    console.log(`📅 ${entry.timestamp} -> ${dateKey} = ${entry.value.toFixed(2)} kWh`)
   })
-  
-  // Debug: log the map contents
-  console.log('Daily data map:', dailyDataMap.size, 'entries')
-  if (dailyDataMap.size > 0) {
-    console.log('Map keys:', Array.from(dailyDataMap.keys()).slice(0, 5))
-  }
   
   // Generate list of months (current month and 11 previous months)
   const months: { year: number; month: number }[] = []
