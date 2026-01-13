@@ -4,6 +4,7 @@ import './EnergyGraph.css'
 
 interface EnergyGraphProps {
   data: EnergyData[]
+  yesterdayData: EnergyData[]
 }
 
 interface HoverData {
@@ -11,13 +12,12 @@ interface HoverData {
   timestamp: string
   x: number
   y: number
+  yesterdayValue?: number
 }
 
-export function EnergyGraph({ data }: EnergyGraphProps) {
+export function EnergyGraph({ data, yesterdayData }: EnergyGraphProps) {
   const [hoverData, setHoverData] = useState<HoverData | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
-
-  if (data.length === 0) return null
 
   const width = 800
   const height = 750
@@ -29,10 +29,13 @@ export function EnergyGraph({ data }: EnergyGraphProps) {
   const now = new Date()
   const midnightStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime()
   const midnightEnd = midnightStart + 24 * 60 * 60 * 1000
+  const yesterdayMidnight = midnightStart - 24 * 60 * 60 * 1000
 
-  // Get max value with some headroom
-  const values = data.map(d => d.value)
-  const maxValue = Math.max(...values, 0.1) * 1.1
+  // Get max value from both datasets
+  const todayValues = data.map(d => d.value)
+  const yesterdayValues = yesterdayData.map(d => d.value)
+  const allValues = [...todayValues, ...yesterdayValues]
+  const maxValue = Math.max(...allValues, 0.1) * 1.1
 
   // Linear scale from 0 to max
   const valueToY = (value: number): number => {
@@ -41,26 +44,41 @@ export function EnergyGraph({ data }: EnergyGraphProps) {
   }
 
   // Convert timestamp to X position (based on time of day)
-  const timeToX = (timestamp: string): number => {
+  const timeToX = (timestamp: string, baseMidnight: number): number => {
     const time = new Date(timestamp).getTime()
-    const dayProgress = (time - midnightStart) / (midnightEnd - midnightStart)
+    const dayProgress = (time - baseMidnight) / (24 * 60 * 60 * 1000)
     return Math.max(0, Math.min(1, dayProgress)) * chartWidth
   }
 
-  // Create SVG path for the line - start from origin (0,0 kWh at midnight)
-  const points = [
+  // Create today's points - start from origin (0,0 kWh at midnight)
+  const todayPoints = data.length > 0 ? [
     { x: 0, y: chartHeight, value: 0, timestamp: new Date(midnightStart).toISOString() },
     ...data.map((d) => ({
-      x: timeToX(d.timestamp),
+      x: timeToX(d.timestamp, midnightStart),
       y: valueToY(d.value),
       value: d.value,
       timestamp: d.timestamp
     }))
-  ]
+  ] : []
 
-  const pathData = points.map((p, i) => 
-    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
-  ).join(' ')
+  // Create yesterday's points
+  const yesterdayPoints = yesterdayData.length > 0 ? [
+    { x: 0, y: chartHeight, value: 0, timestamp: new Date(yesterdayMidnight).toISOString() },
+    ...yesterdayData.map((d) => ({
+      x: timeToX(d.timestamp, yesterdayMidnight),
+      y: valueToY(d.value),
+      value: d.value,
+      timestamp: d.timestamp
+    }))
+  ] : []
+
+  const todayPathData = todayPoints.length > 0 
+    ? todayPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+    : ''
+
+  const yesterdayPathData = yesterdayPoints.length > 0
+    ? yesterdayPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+    : ''
 
   // Format timestamp for hover display
   const formatHoverTime = (timestamp: string) => {
@@ -83,22 +101,38 @@ export function EnergyGraph({ data }: EnergyGraphProps) {
   }
 
   const updateHoverFromPosition = (clientX: number) => {
-    if (!svgRef.current || data.length === 0) return
+    if (!svgRef.current) return
 
     const rect = svgRef.current.getBoundingClientRect()
     const scaleX = width / rect.width
     const posX = (clientX - rect.left) * scaleX - padding.left
 
-    // Find the closest data point (skip the first synthetic point at 0)
-    let closestPoint = points[1]
-    let closestDist = Math.abs(points[1].x - posX)
+    // Find the closest today data point
+    let closestPoint = todayPoints.length > 1 ? todayPoints[1] : null
+    let closestDist = closestPoint ? Math.abs(closestPoint.x - posX) : Infinity
     
-    for (let i = 2; i < points.length; i++) {
-      const dist = Math.abs(points[i].x - posX)
+    for (let i = 2; i < todayPoints.length; i++) {
+      const dist = Math.abs(todayPoints[i].x - posX)
       if (dist < closestDist) {
         closestDist = dist
-        closestPoint = points[i]
+        closestPoint = todayPoints[i]
       }
+    }
+
+    // Find the corresponding yesterday value at the same x position
+    let yesterdayValue: number | undefined
+    if (yesterdayPoints.length > 1) {
+      let closestYesterday = yesterdayPoints[1]
+      let closestYesterdayDist = Math.abs(closestYesterday.x - posX)
+      
+      for (let i = 2; i < yesterdayPoints.length; i++) {
+        const dist = Math.abs(yesterdayPoints[i].x - posX)
+        if (dist < closestYesterdayDist) {
+          closestYesterdayDist = dist
+          closestYesterday = yesterdayPoints[i]
+        }
+      }
+      yesterdayValue = closestYesterday.value
     }
 
     if (closestPoint) {
@@ -106,7 +140,8 @@ export function EnergyGraph({ data }: EnergyGraphProps) {
         value: closestPoint.value,
         timestamp: closestPoint.timestamp,
         x: closestPoint.x,
-        y: closestPoint.y
+        y: closestPoint.y,
+        yesterdayValue
       })
     }
   }
@@ -138,6 +173,9 @@ export function EnergyGraph({ data }: EnergyGraphProps) {
         {hoverData ? (
           <>
             <span className="hover-value">{hoverData.value.toFixed(2)} kWh</span>
+            {hoverData.yesterdayValue !== undefined && (
+              <span className="hover-yesterday">({hoverData.yesterdayValue.toFixed(2)})</span>
+            )}
             <span className="hover-time">{formatHoverTime(hoverData.timestamp)}</span>
           </>
         ) : (
@@ -193,21 +231,38 @@ export function EnergyGraph({ data }: EnergyGraphProps) {
             />
           ))}
 
-          {/* Area under curve */}
-          <path
-            d={`${pathData} L ${points[points.length - 1].x} ${chartHeight} L 0 ${chartHeight} Z`}
-            fill="url(#energy-gradient)"
-          />
+          {/* Yesterday's line (grey dotted) */}
+          {yesterdayPathData && (
+            <path
+              d={yesterdayPathData}
+              fill="none"
+              stroke="#bbb"
+              strokeWidth={2}
+              strokeDasharray="6,4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
 
-          {/* Line */}
-          <path
-            d={pathData}
-            fill="none"
-            stroke="#f97316"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          {/* Area under today's curve */}
+          {todayPathData && todayPoints.length > 0 && (
+            <path
+              d={`${todayPathData} L ${todayPoints[todayPoints.length - 1].x} ${chartHeight} L 0 ${chartHeight} Z`}
+              fill="url(#energy-gradient)"
+            />
+          )}
+
+          {/* Today's line */}
+          {todayPathData && (
+            <path
+              d={todayPathData}
+              fill="none"
+              stroke="#f97316"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
 
           {/* Time labels */}
           {timeLabels.map(({ hour, x, label }) => (

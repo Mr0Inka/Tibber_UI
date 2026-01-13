@@ -210,14 +210,31 @@ class API {
         this.app.get('/api/energy/today/cumulative', async (req, res) => {
             try {
                 const now = new Date();
-                const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
                 const stop = now.toISOString();
-                console.log(`📊 Fetching cumulative energy from ${start} to ${stop}`);
 
-                // Get cumulative energy data at 5-minute intervals throughout the day
-                const data = await this.influxLogger.getCumulativeEnergyToday(start, stop, '5m');
-                console.log(`📊 Retrieved ${data.length} cumulative energy points`);
-                res.json({ success: true, data });
+                // Yesterday's range (full day)
+                const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+                const yesterdayEnd = todayStart;
+
+                console.log(`📊 Fetching cumulative energy - Today: ${todayStart.toISOString()} to ${stop}`);
+                console.log(`📊 Fetching cumulative energy - Yesterday: ${yesterdayStart.toISOString()} to ${yesterdayEnd.toISOString()}`);
+
+                // Fetch both today and yesterday in parallel
+                const [todayData, yesterdayData] = await Promise.all([
+                    this.influxLogger.getCumulativeEnergyToday(todayStart.toISOString(), stop, '5m'),
+                    this.influxLogger.getCumulativeEnergyToday(yesterdayStart.toISOString(), yesterdayEnd.toISOString(), '5m')
+                ]);
+
+                console.log(`📊 Retrieved ${todayData.length} today points, ${yesterdayData.length} yesterday points`);
+
+                res.json({
+                    success: true,
+                    data: {
+                        today: todayData,
+                        yesterday: yesterdayData
+                    }
+                });
             } catch (error) {
                 console.error('❌ Error fetching cumulative energy:', error);
                 res.status(500).json({ success: false, error: error.message });

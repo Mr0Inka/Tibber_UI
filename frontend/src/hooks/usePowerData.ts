@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { PowerData, PowerHistoryData, EnergyData, ApiResponse } from '../types'
+import type { PowerData, PowerHistoryData, EnergyData, CumulativeEnergyData, ApiResponse } from '../types'
 import { API_URL } from '../config/api'
 
 type TimeRange = '1m' | '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
@@ -33,6 +33,7 @@ export function usePowerData() {
   const [prevPower, setPrevPower] = useState<number | null>(null)
   const [todayConsumption, setTodayConsumption] = useState<number | null>(null)
   const [todayEnergyGraph, setTodayEnergyGraph] = useState<EnergyData[]>([])
+  const [yesterdayEnergyGraph, setYesterdayEnergyGraph] = useState<EnergyData[]>([])
   const [monthConsumption, setMonthConsumption] = useState<number | null>(null)
   const [dailyAverage, setDailyAverage] = useState<number | null>(null)
   const [graphRange, setGraphRange] = useState<TimeRange>('1h')
@@ -119,14 +120,18 @@ export function usePowerData() {
       const response = await fetch(`${API_URL}/api/energy/today/cumulative`)
       const data: ApiResponse = await response.json()
       
-      if (data.success && Array.isArray(data.data)) {
-        setTodayEnergyGraph(data.data as EnergyData[])
+      if (data.success && data.data) {
+        const cumulativeData = data.data as CumulativeEnergyData
+        setTodayEnergyGraph(cumulativeData.today || [])
+        setYesterdayEnergyGraph(cumulativeData.yesterday || [])
       } else {
         setTodayEnergyGraph([])
+        setYesterdayEnergyGraph([])
       }
     } catch (err) {
       console.error('Failed to fetch today energy graph:', err)
       setTodayEnergyGraph([])
+      setYesterdayEnergyGraph([])
     }
   }, [])
 
@@ -202,6 +207,7 @@ export function usePowerData() {
     prevPower,
     todayConsumption,
     todayEnergyGraph,
+    yesterdayEnergyGraph,
     monthConsumption,
     dailyAverage,
     graphRange,

@@ -17,6 +17,7 @@ function App() {
     prevPower,
     todayConsumption,
     todayEnergyGraph,
+    yesterdayEnergyGraph,
     monthConsumption,
     dailyAverage,
     graphRange,
@@ -75,7 +76,7 @@ function App() {
               />
             )}
             {activeTab === 'today' && (
-              <TodayPage energyData={todayEnergyGraph} />
+              <TodayPage energyData={todayEnergyGraph} yesterdayData={yesterdayEnergyGraph} />
             )}
             {activeTab === 'month' && <MonthPage />}
           </>

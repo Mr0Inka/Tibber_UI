@@ -13,8 +13,13 @@ export interface EnergyData {
   timestamp: string
 }
 
+export interface CumulativeEnergyData {
+  today: EnergyData[]
+  yesterday: EnergyData[]
+}
+
 export interface ApiResponse {
   success: boolean
-  data?: PowerData | PowerHistoryData[] | EnergyData[]
+  data?: PowerData | PowerHistoryData[] | EnergyData[] | CumulativeEnergyData
   error?: string
 }
