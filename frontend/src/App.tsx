@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Tabs } from './components/Tabs/Tabs'
-import { PowerDisplay, MonthDisplay } from './components/PowerDisplay/PowerDisplay'
+import { PowerDisplay, TodayDisplay, MonthDisplay } from './components/PowerDisplay/PowerDisplay'
 import { CurrentPage } from './pages/CurrentPage/CurrentPage'
 import { TodayPage } from './pages/TodayPage/TodayPage'
 import { MonthPage } from './pages/MonthPage/MonthPage'
@@ -23,6 +23,7 @@ function App() {
     graphRange,
     graphData,
     dailyEnergyHistory,
+    todayMinMax,
     loading,
     error,
     setGraphRange,
@@ -45,10 +46,16 @@ function App() {
         
         {!loading && !error && (
           <section className="top-section">
-            {(activeTab === 'current' || activeTab === 'today') && (
+            {activeTab === 'current' && (
               <PowerDisplay 
                 power={power} 
                 prevPower={prevPower} 
+                consumption={todayConsumption}
+              />
+            )}
+            {activeTab === 'today' && (
+              <TodayDisplay 
+                minMax={todayMinMax}
                 consumption={todayConsumption}
               />
             )}

@@ -76,14 +76,21 @@ export function MonthCalendar({ year, month, dailyData }: MonthCalendarProps) {
     return year === today.getFullYear() && month === today.getMonth() && day === today.getDate()
   }
 
+  // Check if this is the current month
+  const now = new Date()
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
+
   return (
     <div className="month-calendar">
       <div className="month-header">
         <h3 className="month-title">{monthName}, {year}</h3>
-        <div className="month-total">
-          <span className="total-value">{monthTotal.toFixed(2)}</span>
-          <span className="total-unit">kWh</span>
-        </div>
+        {/* Only show total for past months - current month total is shown in top section */}
+        {!isCurrentMonth && monthTotal > 0 && (
+          <div className="month-total">
+            <span className="total-value">{monthTotal.toFixed(2)}</span>
+            <span className="total-unit">kWh</span>
+          </div>
+        )}
       </div>
       
       <div className="calendar-grid">
@@ -148,14 +155,15 @@ export function MonthCalendarList({ dailyEnergyHistory }: MonthCalendarListProps
   dailyEnergyHistory.forEach(entry => {
     const date = new Date(entry.timestamp)
     
-    // InfluxDB aggregateWindow returns END of window timestamp
-    // For full day windows, timestamp is midnight -> subtract 1ms to get previous day
+    // InfluxDB aggregateWindow returns END of window timestamp (in UTC)
+    // For full day windows, timestamp is midnight UTC -> subtract 1 day to get actual day
     // For partial windows (today), timestamp is current time -> use as-is
-    const isFullDayWindow = date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0
+    const isFullDayWindow = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0
     if (isFullDayWindow) {
-      date.setDate(date.getDate() - 1) // Go back to the actual day
+      date.setUTCDate(date.getUTCDate() - 1) // Go back to the actual day (in UTC)
     }
     
+    // Use local date for display (calendar shows local dates)
     const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     dailyDataMap.set(dateKey, entry.value)
     console.log(`📅 ${entry.timestamp} -> ${dateKey} = ${entry.value.toFixed(2)} kWh (fullDay: ${isFullDayWindow})`)

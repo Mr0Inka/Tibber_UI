@@ -1,4 +1,4 @@
-import type { PowerData } from '../../types'
+import type { PowerData, MinMaxPower } from '../../types'
 import './PowerDisplay.css'
 
 interface PowerDisplayProps {
@@ -64,6 +64,45 @@ export function MonthDisplay({ dailyAverage, monthConsumption }: MonthDisplayPro
           <span className="unit">kWh</span>
         </div>
         <div className="subtitle">This Month</div>
+      </div>
+    </div>
+  )
+}
+
+interface TodayDisplayProps {
+  minMax: MinMaxPower
+  consumption: number | null
+}
+
+export function TodayDisplay({ minMax, consumption }: TodayDisplayProps) {
+  return (
+    <div className="power-display today-display">
+      <div className="value-box minmax-box">
+        <div className="minmax-values">
+          <div className="minmax-item">
+            <span className="minmax-number">
+              {minMax.min !== null ? Math.round(minMax.min) : '--'}
+            </span>
+            <span className="unit">W</span>
+          </div>
+          <span className="minmax-separator">–</span>
+          <div className="minmax-item">
+            <span className="minmax-number">
+              {minMax.max !== null ? Math.round(minMax.max) : '--'}
+            </span>
+            <span className="unit">W</span>
+          </div>
+        </div>
+        <div className="subtitle">Min – Max</div>
+      </div>
+      <div className="value-box">
+        <div className="consumption">
+          <span className="consumption-number">
+            {consumption !== null ? consumption.toFixed(2) : '--'}
+          </span>
+          <span className="unit">kWh</span>
+        </div>
+        <div className="subtitle">Today</div>
       </div>
     </div>
   )

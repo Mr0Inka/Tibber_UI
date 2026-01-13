@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { PowerData, PowerHistoryData, EnergyData, CumulativeEnergyData, DailyEnergyData, ApiResponse } from '../types'
+import type { PowerData, PowerHistoryData, EnergyData, CumulativeEnergyData, DailyEnergyData, MinMaxPower, ApiResponse } from '../types'
 import { API_URL } from '../config/api'
 
 type TimeRange = '1m' | '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
@@ -39,6 +39,7 @@ export function usePowerData() {
   const [graphRange, setGraphRange] = useState<TimeRange>('1h')
   const [graphData, setGraphData] = useState<PowerHistoryData[]>([])
   const [dailyEnergyHistory, setDailyEnergyHistory] = useState<DailyEnergyData[]>([])
+  const [todayMinMax, setTodayMinMax] = useState<MinMaxPower>({ min: null, max: null })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -202,6 +203,19 @@ export function usePowerData() {
     }
   }, [])
 
+  const fetchTodayMinMax = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/power/today/minmax`)
+      const data: ApiResponse = await response.json()
+      
+      if (data.success && data.data) {
+        setTodayMinMax(data.data as MinMaxPower)
+      }
+    } catch (err) {
+      console.error('Failed to fetch today min/max:', err)
+    }
+  }, [])
+
   useEffect(() => {
     fetchCurrentPower()
     fetchTodayConsumption()
@@ -209,6 +223,7 @@ export function usePowerData() {
     fetchMonthData()
     fetchGraphData(graphRange)
     fetchDailyEnergyHistory()
+    fetchTodayMinMax()
     
     const powerInterval = setInterval(fetchCurrentPower, 1000)
     const consumptionInterval = setInterval(fetchTodayConsumption, 5000)
@@ -216,6 +231,7 @@ export function usePowerData() {
     const monthInterval = setInterval(fetchMonthData, 60000)
     const graphInterval = setInterval(() => fetchGraphData(graphRange), 60000)
     const dailyHistoryInterval = setInterval(fetchDailyEnergyHistory, 300000) // every 5 minutes
+    const minMaxInterval = setInterval(fetchTodayMinMax, 60000) // every minute
     
     return () => {
       clearInterval(powerInterval)
@@ -224,8 +240,9 @@ export function usePowerData() {
       clearInterval(monthInterval)
       clearInterval(graphInterval)
       clearInterval(dailyHistoryInterval)
+      clearInterval(minMaxInterval)
     }
-  }, [fetchCurrentPower, fetchTodayConsumption, fetchTodayEnergyGraph, fetchMonthData, fetchGraphData, fetchDailyEnergyHistory, graphRange])
+  }, [fetchCurrentPower, fetchTodayConsumption, fetchTodayEnergyGraph, fetchMonthData, fetchGraphData, fetchDailyEnergyHistory, fetchTodayMinMax, graphRange])
 
   return {
     power,
@@ -238,6 +255,7 @@ export function usePowerData() {
     graphRange,
     graphData,
     dailyEnergyHistory,
+    todayMinMax,
     loading,
     error,
     setGraphRange,

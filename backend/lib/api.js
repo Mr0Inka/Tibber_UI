@@ -206,6 +206,22 @@ class API {
             }
         });
 
+        // Min/Max power for today
+        this.app.get('/api/power/today/minmax', async (req, res) => {
+            try {
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+                const stop = now.toISOString();
+                console.log(`📊 Fetching min/max power from ${start} to ${stop}`);
+                const data = await this.influxLogger.getMinMaxPowerToday(start, stop);
+                console.log(`📊 Min: ${data.min}W, Max: ${data.max}W`);
+                res.json({ success: true, data });
+            } catch (error) {
+                console.error('❌ Error fetching min/max power:', error);
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
         // Cumulative energy for today (for the Today graph - midnight to now)
         this.app.get('/api/energy/today/cumulative', async (req, res) => {
             try {

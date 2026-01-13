@@ -84,6 +84,52 @@ class InfluxDBLogger {
         });
     }
 
+    async getMinMaxPowerToday(start, stop) {
+        if (!this.connected || !this.queryApi) {
+            throw new Error('InfluxDB not connected');
+        }
+
+        const query = `
+            minData = from(bucket: "${config.influxdb.bucket}")
+                |> range(start: ${start}, stop: ${stop})
+                |> filter(fn: (r) => r._measurement == "Power")
+                |> filter(fn: (r) => r._field == "value")
+                |> min()
+                |> set(key: "stat", value: "min")
+            
+            maxData = from(bucket: "${config.influxdb.bucket}")
+                |> range(start: ${start}, stop: ${stop})
+                |> filter(fn: (r) => r._measurement == "Power")
+                |> filter(fn: (r) => r._field == "value")
+                |> max()
+                |> set(key: "stat", value: "max")
+            
+            union(tables: [minData, maxData])
+        `;
+
+        return new Promise((resolve, reject) => {
+            let min = null;
+            let max = null;
+            this.queryApi.queryRows(query, {
+                next(row, tableMeta) {
+                    const obj = tableMeta.toObject(row);
+                    if (obj.stat === 'min') {
+                        min = obj._value;
+                    } else if (obj.stat === 'max') {
+                        max = obj._value;
+                    }
+                },
+                error(error) {
+                    console.error('InfluxDB min/max query error:', error);
+                    reject(error);
+                },
+                complete() {
+                    resolve({ min, max });
+                }
+            });
+        });
+    }
+
     async getPowerHistory(start, stop, interval = '1m') {
         if (!this.connected || !this.queryApi) {
             throw new Error('InfluxDB not connected');

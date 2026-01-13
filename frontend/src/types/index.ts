@@ -23,8 +23,13 @@ export interface DailyEnergyData {
   timestamp: string
 }
 
+export interface MinMaxPower {
+  min: number | null
+  max: number | null
+}
+
 export interface ApiResponse {
   success: boolean
-  data?: PowerData | PowerHistoryData[] | EnergyData[] | CumulativeEnergyData | DailyEnergyData[]
+  data?: PowerData | PowerHistoryData[] | EnergyData[] | CumulativeEnergyData | DailyEnergyData[] | MinMaxPower
   error?: string
 }
