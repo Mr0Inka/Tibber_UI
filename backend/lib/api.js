@@ -120,7 +120,7 @@ class API {
                 const { range = '1h', interval = '1m' } = req.query;
 
                 // Validate range parameter
-                const validRanges = ['1m', '5m', '30m', '1h', '3h', '6h', '12h', '24h'];
+                const validRanges = ['1m', '5m', '15m', '30m', '1h', '3h', '6h', '12h', '24h'];
                 if (!validRanges.includes(range)) {
                     return res.status(400).json({
                         success: false,
@@ -137,6 +137,9 @@ class API {
                         break;
                     case '5m':
                         start = new Date(now.getTime() - 5 * 60 * 1000);
+                        break;
+                    case '15m':
+                        start = new Date(now.getTime() - 15 * 60 * 1000);
                         break;
                     case '30m':
                         start = new Date(now.getTime() - 30 * 60 * 1000);

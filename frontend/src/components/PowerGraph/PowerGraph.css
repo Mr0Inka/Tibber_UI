@@ -16,18 +16,18 @@
 .hover-value {
   font-weight: 600;
   font-size: 0.9rem;
-  color: #f97316;
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 
 .hover-time {
-  color: #888;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
 
 .hover-placeholder {
-  color: #ccc;
+  color: var(--text-muted);
   font-size: 0.75rem;
   visibility: hidden;
 }
@@ -41,10 +41,81 @@
   overflow: hidden;
 }
 
+.power-graph-svg .gradient-start {
+  stop-color: var(--accent);
+  stop-opacity: 0.3;
+}
+
+.power-graph-svg .gradient-end {
+  stop-color: var(--accent);
+  stop-opacity: 0.05;
+}
+
+.power-graph-svg .graph-line {
+  stroke: var(--accent);
+}
+
+.power-graph-svg .accent-fill {
+  fill: var(--accent);
+}
+
+.power-graph-svg .accent-stroke {
+  stroke: var(--accent);
+}
+
 .hover-line {
   pointer-events: none;
 }
 
 .hover-point {
   pointer-events: none;
+}
+
+/* Live indicator */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #ef4444;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: 0.5rem;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+/* Pulsing point on graph */
+.live-pulse {
+  animation: graphPulse 1.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes graphPulse {
+  0%, 100% {
+    opacity: 0.3;
+    r: 12;
+  }
+  50% {
+    opacity: 0.1;
+    r: 20;
+  }
 }

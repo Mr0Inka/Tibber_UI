@@ -5,11 +5,12 @@ interface MonthCalendarProps {
   year: number
   month: number // 0-indexed (0 = January)
   dailyData: Map<string, number> // key: "YYYY-MM-DD", value: kWh
+  kwhPrice: number
 }
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
-export function MonthCalendar({ year, month, dailyData }: MonthCalendarProps) {
+export function MonthCalendar({ year, month, dailyData, kwhPrice }: MonthCalendarProps) {
   const monthName = new Date(year, month).toLocaleString('en-US', { month: 'long' })
   
   // Get first day of month and number of days
@@ -76,21 +77,21 @@ export function MonthCalendar({ year, month, dailyData }: MonthCalendarProps) {
     return year === today.getFullYear() && month === today.getMonth() && day === today.getDate()
   }
 
-  // Check if this is the current month
-  const now = new Date()
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
-
   return (
     <div className="month-calendar">
       <div className="month-header">
         <h3 className="month-title">{monthName}, {year}</h3>
-        {/* Only show total for past months - current month total is shown in top section */}
-        {!isCurrentMonth && monthTotal > 0 && (
+        <div className="month-totals">
           <div className="month-total">
             <span className="total-value">{monthTotal.toFixed(2)}</span>
             <span className="total-unit">kWh</span>
           </div>
-        )}
+          {kwhPrice > 0 && monthTotal > 0 && (
+            <div className="month-cost">
+              <span className="cost-value">€{(monthTotal * kwhPrice).toFixed(2)}</span>
+            </div>
+          )}
+        </div>
       </div>
       
       <div className="calendar-grid">
@@ -127,7 +128,7 @@ export function MonthCalendar({ year, month, dailyData }: MonthCalendarProps) {
               }
               
               return (
-                <div key={dayIndex} className="day-cell">
+                <div key={dayIndex} className={`day-cell ${today ? 'is-today' : ''}`}>
                   <span className="day-number">{day}</span>
                   <div className={`day-value ${valueClass}`}>
                     {(today || isPast) ? value.toFixed(2) : ''}
@@ -144,9 +145,10 @@ export function MonthCalendar({ year, month, dailyData }: MonthCalendarProps) {
 
 interface MonthCalendarListProps {
   dailyEnergyHistory: DailyEnergyData[]
+  kwhPrice: number
 }
 
-export function MonthCalendarList({ dailyEnergyHistory }: MonthCalendarListProps) {
+export function MonthCalendarList({ dailyEnergyHistory, kwhPrice }: MonthCalendarListProps) {
   // Create a map of date -> value for quick lookup
   const dailyDataMap = new Map<string, number>()
   
@@ -186,6 +188,7 @@ export function MonthCalendarList({ dailyEnergyHistory }: MonthCalendarListProps
           year={year}
           month={month}
           dailyData={dailyDataMap}
+          kwhPrice={kwhPrice}
         />
       ))}
     </div>

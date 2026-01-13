@@ -140,8 +140,8 @@ class InfluxDBLogger {
             |> range(start: ${start}, stop: ${stop})
             |> filter(fn: (r) => r._measurement == "Power")
             |> filter(fn: (r) => r._field == "value")
-            |> aggregateWindow(every: ${interval}, fn: mean, createEmpty: false)
-            |> yield(name: "mean")
+            |> aggregateWindow(every: ${interval}, fn: max, createEmpty: false)
+            |> yield(name: "max")
         `;
 
         return new Promise((resolve, reject) => {

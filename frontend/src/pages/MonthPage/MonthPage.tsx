@@ -4,12 +4,14 @@ import './MonthPage.css'
 
 interface MonthPageProps {
   dailyEnergyHistory: DailyEnergyData[]
+  kwhPrice: number
 }
 
-export function MonthPage({ dailyEnergyHistory }: MonthPageProps) {
+export function MonthPage({ dailyEnergyHistory, kwhPrice }: MonthPageProps) {
   return (
     <div className="page month-page">
-      <MonthCalendarList dailyEnergyHistory={dailyEnergyHistory} />
+      <h2 className="page-title">Daily History</h2>
+      <MonthCalendarList dailyEnergyHistory={dailyEnergyHistory} kwhPrice={kwhPrice} />
     </div>
   )
 }

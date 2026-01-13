@@ -74,23 +74,31 @@ interface TodayDisplayProps {
   consumption: number | null
 }
 
+// Format power value - show kW for large values
+function formatPower(watts: number | null): { value: string; unit: string } {
+  if (watts === null) return { value: '--', unit: 'W' }
+  if (watts >= 1000) {
+    return { value: (watts / 1000).toFixed(1), unit: 'kW' }
+  }
+  return { value: Math.round(watts).toString(), unit: 'W' }
+}
+
 export function TodayDisplay({ minMax, consumption }: TodayDisplayProps) {
+  const minFormatted = formatPower(minMax.min)
+  const maxFormatted = formatPower(minMax.max)
+
   return (
     <div className="power-display today-display">
       <div className="value-box minmax-box">
         <div className="minmax-values">
           <div className="minmax-item">
-            <span className="minmax-number">
-              {minMax.min !== null ? Math.round(minMax.min) : '--'}
-            </span>
-            <span className="unit">W</span>
+            <span className="minmax-number">{minFormatted.value}</span>
+            <span className="unit">{minFormatted.unit}</span>
           </div>
           <span className="minmax-separator">–</span>
           <div className="minmax-item">
-            <span className="minmax-number">
-              {minMax.max !== null ? Math.round(minMax.max) : '--'}
-            </span>
-            <span className="unit">W</span>
+            <span className="minmax-number">{maxFormatted.value}</span>
+            <span className="unit">{maxFormatted.unit}</span>
           </div>
         </div>
         <div className="subtitle">Min – Max</div>

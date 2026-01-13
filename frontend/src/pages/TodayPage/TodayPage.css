@@ -1,4 +1,8 @@
 .energy-graph-container {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 4px 20px var(--shadow);
   display: flex;
   flex-direction: column;
 }
@@ -8,7 +12,7 @@
 }
 
 .graph-empty {
-  color: #888;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   text-align: center;
   padding: 2rem 0;

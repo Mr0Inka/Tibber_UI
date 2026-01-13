@@ -1,7 +1,7 @@
 .graph-controls {
   display: inline-flex;
   justify-content: center;
-  background: #f5f5f5;
+  background: var(--bg-elevated);
   padding: 0.2rem;
   border-radius: 10px;
   gap: 0.2rem;
@@ -15,7 +15,7 @@
   font-weight: 500;
   background: transparent;
   border: none;
-  color: #999;
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
   border-radius: 8px;
@@ -30,7 +30,7 @@
 }
 
 .range-button.active {
-  color: #f97316;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  color: var(--accent);
+  background: var(--bg-card);
+  box-shadow: 0 2px 8px var(--shadow);
 }

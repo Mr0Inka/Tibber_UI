@@ -16,23 +16,23 @@
 .energy-graph-wrapper .hover-value {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #f97316;
+  color: var(--accent);
 }
 
 .energy-graph-wrapper .hover-yesterday {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #999;
+  color: var(--text-secondary);
 }
 
 .energy-graph-wrapper .hover-time {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--text-secondary);
 }
 
 .energy-graph-wrapper .hover-placeholder {
   font-size: 0.75rem;
-  color: #ccc;
+  color: var(--text-muted);
   visibility: hidden;
 }
 
@@ -42,6 +42,28 @@
   border-radius: 12px;
   overflow: hidden;
   touch-action: none;
+}
+
+.energy-graph-svg .gradient-start {
+  stop-color: var(--accent);
+  stop-opacity: 0.3;
+}
+
+.energy-graph-svg .gradient-end {
+  stop-color: var(--accent);
+  stop-opacity: 0.05;
+}
+
+.energy-graph-svg .graph-line {
+  stroke: var(--accent);
+}
+
+.energy-graph-svg .accent-fill {
+  fill: var(--accent);
+}
+
+.energy-graph-svg .accent-stroke {
+  stroke: var(--accent);
 }
 
 .energy-graph-svg .hover-line {

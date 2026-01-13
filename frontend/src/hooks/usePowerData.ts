@@ -40,6 +40,8 @@ export function usePowerData() {
   const [graphData, setGraphData] = useState<PowerHistoryData[]>([])
   const [dailyEnergyHistory, setDailyEnergyHistory] = useState<DailyEnergyData[]>([])
   const [todayMinMax, setTodayMinMax] = useState<MinMaxPower>({ min: null, max: null })
+  const [avg15m, setAvg15m] = useState<number | null>(null)
+  const [avg3h, setAvg3h] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -139,23 +141,8 @@ export function usePowerData() {
 
   const fetchMonthData = useCallback(async () => {
     try {
-      const [monthRes, avgRes] = await Promise.all([
-        fetch(`${API_URL}/api/energy/month`),
-        fetch(`${API_URL}/api/energy/month/daily-average`)
-      ])
-      
-      const monthData: ApiResponse = await monthRes.json()
+      const avgRes = await fetch(`${API_URL}/api/energy/month/daily-average`)
       const avgData = await avgRes.json()
-      
-      if (monthData.success && Array.isArray(monthData.data)) {
-        const energyData = monthData.data as EnergyData[]
-        if (energyData.length > 0) {
-          const lastValue = energyData[energyData.length - 1].value
-          setMonthConsumption(lastValue)
-        } else {
-          setMonthConsumption(0)
-        }
-      }
       
       if (avgData.success && avgData.data) {
         setDailyAverage(avgData.data.average)
@@ -216,6 +203,60 @@ export function usePowerData() {
     }
   }, [])
 
+  const fetchPowerAverages = useCallback(async () => {
+    try {
+      // Fetch 15-minute average
+      const res15m = await fetch(`${API_URL}/api/power?range=15m&interval=1m`)
+      const data15m: ApiResponse = await res15m.json()
+      
+      if (data15m.success && Array.isArray(data15m.data)) {
+        const values = (data15m.data as PowerHistoryData[]).map(d => d.value).filter(v => v > 0)
+        if (values.length > 0) {
+          setAvg15m(values.reduce((a, b) => a + b, 0) / values.length)
+        }
+      }
+      
+      // Fetch 3-hour average
+      const res3h = await fetch(`${API_URL}/api/power?range=3h&interval=5m`)
+      const data3h: ApiResponse = await res3h.json()
+      
+      if (data3h.success && Array.isArray(data3h.data)) {
+        const values = (data3h.data as PowerHistoryData[]).map(d => d.value).filter(v => v > 0)
+        if (values.length > 0) {
+          setAvg3h(values.reduce((a, b) => a + b, 0) / values.length)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch power averages:', err)
+    }
+  }, [])
+
+  // Calculate month consumption from daily energy history (same as calendar)
+  useEffect(() => {
+    if (dailyEnergyHistory.length === 0) return
+    
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth()
+    
+    let total = 0
+    dailyEnergyHistory.forEach(entry => {
+      const date = new Date(entry.timestamp)
+      // Check if midnight UTC - if so, subtract a day (window end timestamp)
+      const isFullDayWindow = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0
+      if (isFullDayWindow) {
+        date.setUTCDate(date.getUTCDate() - 1)
+      }
+      
+      // Check if this day is in the current month
+      if (date.getFullYear() === currentYear && date.getMonth() === currentMonth) {
+        total += entry.value
+      }
+    })
+    
+    setMonthConsumption(total)
+  }, [dailyEnergyHistory])
+
   useEffect(() => {
     fetchCurrentPower()
     fetchTodayConsumption()
@@ -224,6 +265,7 @@ export function usePowerData() {
     fetchGraphData(graphRange)
     fetchDailyEnergyHistory()
     fetchTodayMinMax()
+    fetchPowerAverages()
     
     const powerInterval = setInterval(fetchCurrentPower, 1000)
     const consumptionInterval = setInterval(fetchTodayConsumption, 5000)
@@ -232,6 +274,7 @@ export function usePowerData() {
     const graphInterval = setInterval(() => fetchGraphData(graphRange), 60000)
     const dailyHistoryInterval = setInterval(fetchDailyEnergyHistory, 300000) // every 5 minutes
     const minMaxInterval = setInterval(fetchTodayMinMax, 60000) // every minute
+    const avgInterval = setInterval(fetchPowerAverages, 60000) // every minute
     
     return () => {
       clearInterval(powerInterval)
@@ -241,8 +284,9 @@ export function usePowerData() {
       clearInterval(graphInterval)
       clearInterval(dailyHistoryInterval)
       clearInterval(minMaxInterval)
+      clearInterval(avgInterval)
     }
-  }, [fetchCurrentPower, fetchTodayConsumption, fetchTodayEnergyGraph, fetchMonthData, fetchGraphData, fetchDailyEnergyHistory, fetchTodayMinMax, graphRange])
+  }, [fetchCurrentPower, fetchTodayConsumption, fetchTodayEnergyGraph, fetchMonthData, fetchGraphData, fetchDailyEnergyHistory, fetchTodayMinMax, fetchPowerAverages, graphRange])
 
   return {
     power,
@@ -256,6 +300,8 @@ export function usePowerData() {
     graphData,
     dailyEnergyHistory,
     todayMinMax,
+    avg15m,
+    avg3h,
     loading,
     error,
     setGraphRange,

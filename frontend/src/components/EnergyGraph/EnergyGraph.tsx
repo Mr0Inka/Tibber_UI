@@ -181,12 +181,12 @@ export function EnergyGraph({ data, yesterdayData }: EnergyGraphProps) {
       >
         <defs>
           <linearGradient id="energy-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#f97316" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#f97316" stopOpacity="0.05" />
+            <stop offset="0%" className="gradient-start" />
+            <stop offset="100%" className="gradient-end" />
           </linearGradient>
           <linearGradient id="yesterday-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#999" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#999" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="#555" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#555" stopOpacity="0.02" />
           </linearGradient>
         </defs>
         
@@ -212,7 +212,7 @@ export function EnergyGraph({ data, yesterdayData }: EnergyGraphProps) {
             <path
               d={yesterdayPathData}
               fill="none"
-              stroke="#bbb"
+              stroke="#555"
               strokeWidth={2}
               strokeDasharray="6,4"
               strokeLinecap="round"
@@ -225,10 +225,22 @@ export function EnergyGraph({ data, yesterdayData }: EnergyGraphProps) {
             <path
               d={todayPathData}
               fill="none"
-              stroke="#f97316"
+              className="graph-line"
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
+            />
+          )}
+
+          {/* Endpoint on today's line */}
+          {todayPoints.length > 1 && (
+            <circle
+              cx={todayPoints[todayPoints.length - 1].x}
+              cy={todayPoints[todayPoints.length - 1].y}
+              r={5}
+              className="accent-fill"
+              stroke="#1a1a1a"
+              strokeWidth={2}
             />
           )}
 
@@ -242,10 +254,9 @@ export function EnergyGraph({ data, yesterdayData }: EnergyGraphProps) {
                 y1={0}
                 x2={hoverData.x}
                 y2={chartHeight}
-                stroke="#f97316"
+                className="hover-line accent-stroke"
                 strokeWidth={1}
                 strokeDasharray="4,4"
-                className="hover-line"
               />
               {/* Yesterday point (grey) */}
               {hoverData.yesterdayY !== null && (
@@ -253,22 +264,21 @@ export function EnergyGraph({ data, yesterdayData }: EnergyGraphProps) {
                   cx={hoverData.x}
                   cy={hoverData.yesterdayY}
                   r={5}
-                  fill="#bbb"
-                  stroke="white"
+                  fill="#666"
+                  stroke="#1a1a1a"
                   strokeWidth={2}
                   className="hover-point"
                 />
               )}
-              {/* Today point (orange) - only show if we have today's value */}
+              {/* Today point (accent) - only show if we have today's value */}
               {hoverData.todayY !== null && (
                 <circle
                   cx={hoverData.x}
                   cy={hoverData.todayY}
                   r={5}
-                  fill="#f97316"
-                  stroke="white"
+                  className="hover-point accent-fill"
+                  stroke="#1a1a1a"
                   strokeWidth={2}
-                  className="hover-point"
                 />
               )}
             </>

@@ -7,10 +7,10 @@
 }
 
 .month-calendar {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 1rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px var(--shadow);
 }
 
 .month-header {
@@ -24,8 +24,15 @@
 .month-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin: 0;
+}
+
+.month-totals {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
 }
 
 .month-total {
@@ -37,12 +44,23 @@
 .total-value {
   font-size: 1rem;
   font-weight: 600;
-  color: #f97316;
+  color: var(--accent);
 }
 
 .total-unit {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--text-secondary);
+}
+
+.month-cost {
+  display: flex;
+  align-items: baseline;
+}
+
+.cost-value {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .calendar-grid {
@@ -61,7 +79,7 @@
 .weekday {
   font-size: 0.7rem;
   font-weight: 500;
-  color: #888;
+  color: var(--text-secondary);
   text-align: center;
   padding: 0.25rem;
 }
@@ -77,56 +95,67 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   border-radius: 8px;
   position: relative;
   min-height: 48px;
+  background: var(--bg-elevated);
+  padding-bottom: 6px;
 }
 
 .day-cell.empty {
   background: transparent;
 }
 
+.day-cell.is-today {
+  background: var(--bg-elevated);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
 .day-number {
   font-size: 0.65rem;
-  color: #666;
+  color: var(--text-muted);
   position: absolute;
   top: 3px;
   right: 5px;
 }
 
-.day-value {
-  font-size: 0.65rem;
-  font-weight: 600;
-  border-radius: 6px;
-  padding: 0.35rem 0.2rem;
-  width: calc(100% - 6px);
-  text-align: center;
-  margin-top: 8px;
-}
-
-/* Today: light grey background, orange text */
-.day-value.today {
-  background: #f3f4f6;
-  color: #f97316;
+.day-cell.is-today .day-number {
+  color: var(--accent);
   font-weight: 700;
 }
 
-/* Past days with data: light grey background, black text */
+.day-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.2rem 0.15rem;
+  width: calc(100% - 6px);
+  text-align: center;
+}
+
+/* Today: accent color text, bold */
+.day-value.today {
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Past days with data: dark background, light text */
 .day-value.past-has-data {
-  background: #f3f4f6;
-  color: #333;
+  background: transparent;
+  color: var(--text-primary);
 }
 
-/* Past days without data: light grey, greyed out text */
+/* Past days without data: muted text */
 .day-value.past-no-data {
-  background: #f3f4f6;
-  color: #ccc;
+  background: transparent;
+  color: var(--text-muted);
 }
 
-/* Future days: light grey, no value */
+/* Future days: no value */
 .day-value.future {
-  background: #f3f4f6;
+  background: transparent;
   color: transparent;
   min-height: 1.2rem;
 }
@@ -146,7 +175,7 @@
   }
 
   .day-value {
-    font-size: 0.6rem;
-    padding: 0.25rem 0.15rem;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.1rem;
   }
 }

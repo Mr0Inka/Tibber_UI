@@ -4,6 +4,7 @@ import './PowerGraph.css'
 
 interface PowerGraphProps {
   data: PowerHistoryData[]
+  isLive?: boolean
 }
 
 interface HoverData {
@@ -13,7 +14,7 @@ interface HoverData {
   y: number
 }
 
-export function PowerGraph({ data }: PowerGraphProps) {
+export function PowerGraph({ data, isLive = false }: PowerGraphProps) {
   const [hoverData, setHoverData] = useState<HoverData | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
@@ -104,6 +105,9 @@ export function PowerGraph({ data }: PowerGraphProps) {
     setHoverData(null)
   }
 
+  // Get the last point for live indicator
+  const lastPoint = points[points.length - 1]
+
   return (
     <div className="power-graph-wrapper">
       {/* Hover info display */}
@@ -129,9 +133,9 @@ export function PowerGraph({ data }: PowerGraphProps) {
         onTouchEnd={handleLeave}
       >
         <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#f97316" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#f97316" stopOpacity="0.05" />
+          <linearGradient id="power-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" className="gradient-start" />
+            <stop offset="100%" className="gradient-end" />
           </linearGradient>
         </defs>
         
@@ -139,18 +143,39 @@ export function PowerGraph({ data }: PowerGraphProps) {
           {/* Area under curve */}
           <path
             d={`${pathData} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`}
-            fill="url(#gradient)"
+            fill="url(#power-gradient)"
           />
 
           {/* Line */}
           <path
             d={pathData}
             fill="none"
-            stroke="#f97316"
+            className="graph-line"
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+
+          {/* Live pulsing point at end of line */}
+          {isLive && lastPoint && (
+            <>
+              <circle
+                cx={lastPoint.x}
+                cy={lastPoint.y}
+                r={12}
+                className="live-pulse accent-fill"
+                opacity={0.3}
+              />
+              <circle
+                cx={lastPoint.x}
+                cy={lastPoint.y}
+                r={5}
+                className="accent-fill"
+                stroke="#1a1a1a"
+                strokeWidth={2}
+              />
+            </>
+          )}
 
           {/* Hover indicator */}
           {hoverData && (
@@ -161,20 +186,18 @@ export function PowerGraph({ data }: PowerGraphProps) {
                 y1={0}
                 x2={hoverData.x}
                 y2={chartHeight}
-                stroke="#f97316"
+                className="hover-line accent-stroke"
                 strokeWidth={1}
                 strokeDasharray="4,4"
-                className="hover-line"
               />
               {/* Point */}
               <circle
                 cx={hoverData.x}
                 cy={hoverData.y}
                 r={6}
-                fill="#f97316"
-                stroke="white"
+                className="hover-point accent-fill"
+                stroke="#1a1a1a"
                 strokeWidth={2}
-                className="hover-point"
               />
             </>
           )}
