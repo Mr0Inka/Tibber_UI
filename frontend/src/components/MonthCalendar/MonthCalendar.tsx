@@ -147,10 +147,18 @@ export function MonthCalendarList({ dailyEnergyHistory }: MonthCalendarListProps
   
   dailyEnergyHistory.forEach(entry => {
     const date = new Date(entry.timestamp)
-    // Use local date (not UTC) since that's what the calendar displays
+    
+    // InfluxDB aggregateWindow returns END of window timestamp
+    // For full day windows, timestamp is midnight -> subtract 1ms to get previous day
+    // For partial windows (today), timestamp is current time -> use as-is
+    const isFullDayWindow = date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0
+    if (isFullDayWindow) {
+      date.setDate(date.getDate() - 1) // Go back to the actual day
+    }
+    
     const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     dailyDataMap.set(dateKey, entry.value)
-    console.log(`📅 ${entry.timestamp} -> ${dateKey} = ${entry.value.toFixed(2)} kWh`)
+    console.log(`📅 ${entry.timestamp} -> ${dateKey} = ${entry.value.toFixed(2)} kWh (fullDay: ${isFullDayWindow})`)
   })
   
   // Generate list of months (current month and 11 previous months)
