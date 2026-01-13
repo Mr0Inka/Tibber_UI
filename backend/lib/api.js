@@ -213,7 +213,7 @@ class API {
                 const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
                 const stop = now.toISOString();
                 console.log(`📊 Fetching cumulative energy from ${start} to ${stop}`);
-                
+
                 // Get energy data at 5-minute intervals throughout the day
                 const data = await this.influxLogger.getEnergyHistory(start, stop, '5m');
                 console.log(`📊 Retrieved ${data.length} cumulative energy points`);
