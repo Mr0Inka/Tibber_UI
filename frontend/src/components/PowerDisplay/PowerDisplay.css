@@ -17,7 +17,7 @@
 
 .power-value,
 .consumption {
-  font-size: 3rem;
+  font-size: 2.75rem;
   font-weight: 700;
   color: #1a1a1a;
   line-height: 1;
@@ -83,18 +83,18 @@
 }
 
 .unit {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 500;
-  color: #888;
+  color: #f97316;
 }
 
 .subtitle {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #999;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #aaa;
   margin-top: 0.5rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 @media (max-width: 640px) {

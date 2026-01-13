@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { PowerData, PowerHistoryData, HourlyData, EnergyData, ApiResponse } from '../types'
+import type { PowerData, PowerHistoryData, EnergyData, ApiResponse } from '../types'
 import { API_URL } from '../config/api'
 
 type TimeRange = '1m' | '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
 
-// Get suitable interval for each time range
 const getIntervalForRange = (range: TimeRange): string => {
   switch (range) {
-    case '1m': return '1s' // All live values
-    case '5m': return '1s' // All live values (1 second intervals)
+    case '1m': return '1s'
+    case '5m': return '1s'
     case '30m': return '10s'
     case '1h': return '30s'
     case '6h': return '1m'
@@ -17,7 +16,6 @@ const getIntervalForRange = (range: TimeRange): string => {
   }
 }
 
-// Get range duration in milliseconds
 const getRangeDuration = (range: TimeRange): number => {
   switch (range) {
     case '1m': return 1 * 60 * 1000
@@ -34,14 +32,14 @@ export function usePowerData() {
   const [power, setPower] = useState<PowerData>({ value: null, timestamp: null })
   const [prevPower, setPrevPower] = useState<number | null>(null)
   const [todayConsumption, setTodayConsumption] = useState<number | null>(null)
-  const [hourlyData, setHourlyData] = useState<HourlyData[]>([])
+  const [todayEnergyGraph, setTodayEnergyGraph] = useState<EnergyData[]>([])
+  const [monthConsumption, setMonthConsumption] = useState<number | null>(null)
+  const [dailyAverage, setDailyAverage] = useState<number | null>(null)
   const [graphRange, setGraphRange] = useState<TimeRange>('1h')
   const [graphData, setGraphData] = useState<PowerHistoryData[]>([])
-  const [graphLoading, setGraphLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  // Use ref to access current graphRange in callbacks without stale closures
   const graphRangeRef = useRef(graphRange)
   graphRangeRef.current = graphRange
 
@@ -62,7 +60,6 @@ export function usePowerData() {
           return newPowerData
         })
         
-        // Add new value to graph data for live updates (only for short ranges with 1s intervals)
         const currentRange = graphRangeRef.current
         const isLiveRange = currentRange === '1m' || currentRange === '5m'
         
@@ -72,16 +69,12 @@ export function usePowerData() {
             const rangeDuration = getRangeDuration(currentRange)
             const cutoffTime = now - rangeDuration
             
-            // Add new point
             const newPoint: PowerHistoryData = {
               value: newPower,
               timestamp: newPowerData.timestamp!
             }
             
-            // Filter out old points and add new one
             const filtered = prevData.filter(d => new Date(d.timestamp).getTime() > cutoffTime)
-            
-            // Avoid duplicates (same timestamp)
             const lastPoint = filtered[filtered.length - 1]
             if (lastPoint && lastPoint.timestamp === newPoint.timestamp) {
               return filtered
@@ -121,47 +114,51 @@ export function usePowerData() {
     }
   }, [])
 
-  const fetchHourlyData = useCallback(async () => {
+  const fetchTodayEnergyGraph = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/energy/today/hourly`)
+      const response = await fetch(`${API_URL}/api/energy/today/cumulative`)
       const data: ApiResponse = await response.json()
       
       if (data.success && Array.isArray(data.data)) {
-        const energyData = data.data as EnergyData[]
-        
-        const hourly: HourlyData[] = []
-        for (let i = 0; i < 24; i++) {
-          hourly.push({ hour: i, consumption: 0 })
-        }
-        
-        energyData.forEach((item) => {
-          const timestamp = new Date(item.timestamp)
-          const hour = timestamp.getHours()
-          if (hour >= 0 && hour < 24 && item.value > 0) {
-            hourly[hour].consumption = item.value
-          }
-        })
-        
-        setHourlyData(hourly)
+        setTodayEnergyGraph(data.data as EnergyData[])
       } else {
-        const hourly: HourlyData[] = []
-        for (let i = 0; i < 24; i++) {
-          hourly.push({ hour: i, consumption: 0 })
-        }
-        setHourlyData(hourly)
+        setTodayEnergyGraph([])
       }
     } catch (err) {
-      console.error('Failed to fetch hourly data:', err)
-      const hourly: HourlyData[] = []
-      for (let i = 0; i < 24; i++) {
-        hourly.push({ hour: i, consumption: 0 })
+      console.error('Failed to fetch today energy graph:', err)
+      setTodayEnergyGraph([])
+    }
+  }, [])
+
+  const fetchMonthData = useCallback(async () => {
+    try {
+      const [monthRes, avgRes] = await Promise.all([
+        fetch(`${API_URL}/api/energy/month`),
+        fetch(`${API_URL}/api/energy/month/daily-average`)
+      ])
+      
+      const monthData: ApiResponse = await monthRes.json()
+      const avgData = await avgRes.json()
+      
+      if (monthData.success && Array.isArray(monthData.data)) {
+        const energyData = monthData.data as EnergyData[]
+        if (energyData.length > 0) {
+          const lastValue = energyData[energyData.length - 1].value
+          setMonthConsumption(lastValue)
+        } else {
+          setMonthConsumption(0)
+        }
       }
-      setHourlyData(hourly)
+      
+      if (avgData.success && avgData.data) {
+        setDailyAverage(avgData.data.average)
+      }
+    } catch (err) {
+      console.error('Failed to fetch month data:', err)
     }
   }, [])
 
   const fetchGraphData = useCallback(async (range: TimeRange) => {
-    setGraphLoading(true)
     try {
       const interval = getIntervalForRange(range)
       const response = await fetch(`${API_URL}/api/power?range=${range}&interval=${interval}`)
@@ -175,39 +172,40 @@ export function usePowerData() {
     } catch (err) {
       console.error('Failed to fetch graph data:', err)
       setGraphData([])
-    } finally {
-      setGraphLoading(false)
     }
   }, [])
 
   useEffect(() => {
     fetchCurrentPower()
     fetchTodayConsumption()
-    fetchHourlyData()
+    fetchTodayEnergyGraph()
+    fetchMonthData()
     fetchGraphData(graphRange)
     
     const powerInterval = setInterval(fetchCurrentPower, 1000)
     const consumptionInterval = setInterval(fetchTodayConsumption, 5000)
-    const hourlyInterval = setInterval(fetchHourlyData, 60000)
-    // Refresh full graph data less frequently since we're adding live values
+    const energyGraphInterval = setInterval(fetchTodayEnergyGraph, 60000)
+    const monthInterval = setInterval(fetchMonthData, 60000)
     const graphInterval = setInterval(() => fetchGraphData(graphRange), 60000)
     
     return () => {
       clearInterval(powerInterval)
       clearInterval(consumptionInterval)
-      clearInterval(hourlyInterval)
+      clearInterval(energyGraphInterval)
+      clearInterval(monthInterval)
       clearInterval(graphInterval)
     }
-  }, [fetchCurrentPower, fetchTodayConsumption, fetchHourlyData, fetchGraphData, graphRange])
+  }, [fetchCurrentPower, fetchTodayConsumption, fetchTodayEnergyGraph, fetchMonthData, fetchGraphData, graphRange])
 
   return {
     power,
     prevPower,
     todayConsumption,
-    hourlyData,
+    todayEnergyGraph,
+    monthConsumption,
+    dailyAverage,
     graphRange,
     graphData,
-    graphLoading,
     loading,
     error,
     setGraphRange,

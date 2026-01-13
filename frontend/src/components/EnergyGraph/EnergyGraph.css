@@ -1,0 +1,47 @@
+.energy-graph-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.energy-graph-wrapper .hover-info {
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.energy-graph-wrapper .hover-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f97316;
+}
+
+.energy-graph-wrapper .hover-time {
+  font-size: 0.875rem;
+  color: #999;
+}
+
+.energy-graph-wrapper .hover-placeholder {
+  font-size: 0.875rem;
+  color: #ccc;
+}
+
+.energy-graph-svg {
+  width: 100%;
+  height: auto;
+  border-radius: 0 0 16px 16px;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.energy-graph-svg .hover-line {
+  pointer-events: none;
+}
+
+.energy-graph-svg .hover-point {
+  pointer-events: none;
+}

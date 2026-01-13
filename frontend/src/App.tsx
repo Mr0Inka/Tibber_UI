@@ -1,23 +1,26 @@
 import { useState } from 'react'
 import { Tabs } from './components/Tabs/Tabs'
+import { PowerDisplay, MonthDisplay } from './components/PowerDisplay/PowerDisplay'
+import { CurrentPage } from './pages/CurrentPage/CurrentPage'
 import { TodayPage } from './pages/TodayPage/TodayPage'
 import { MonthPage } from './pages/MonthPage/MonthPage'
 import { usePowerData } from './hooks/usePowerData'
 import './App.css'
 
-type TabType = 'today' | 'month'
+type TabType = 'current' | 'today' | 'month'
 type TimeRange = '1m' | '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
 
 function App() {
-  const [activeTab, setActiveTab] = useState<TabType>('today')
+  const [activeTab, setActiveTab] = useState<TabType>('current')
   const {
     power,
     prevPower,
     todayConsumption,
-    hourlyData,
+    todayEnergyGraph,
+    monthConsumption,
+    dailyAverage,
     graphRange,
     graphData,
-    graphLoading,
     loading,
     error,
     setGraphRange,
@@ -31,27 +34,55 @@ function App() {
 
   return (
     <div className="app">
-      <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="sticky-header">
+        <div className="sticky-header-inner">
+          <header className="header">
+            <button type="button" className="header-button left"></button>
+            <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
+            <button type="button" className="header-button right"></button>
+          </header>
+          
+          {!loading && !error && (
+            <section className="top-section">
+              {(activeTab === 'current' || activeTab === 'today') && (
+                <PowerDisplay 
+                  power={power} 
+                  prevPower={prevPower} 
+                  consumption={todayConsumption}
+                />
+              )}
+              {activeTab === 'month' && (
+                <MonthDisplay 
+                  dailyAverage={dailyAverage}
+                  monthConsumption={monthConsumption}
+                />
+              )}
+            </section>
+          )}
+        </div>
+      </div>
+
+      <div className="header-spacer"></div>
 
       <div className="content">
-        {activeTab === 'today' ? (
-          loading ? (
-            <div className="loading">Loading...</div>
-          ) : error ? (
-            <div className="error">❌ {error}</div>
-          ) : (
-            <TodayPage
-              power={power}
-              prevPower={prevPower}
-              consumption={todayConsumption}
-              graphRange={graphRange}
-              graphData={graphData}
-              graphLoading={graphLoading}
-              onRangeChange={handleRangeChange}
-            />
-          )
+        {loading ? (
+          <div className="loading">Loading...</div>
+        ) : error ? (
+          <div className="error">❌ {error}</div>
         ) : (
-          <MonthPage power={power} prevPower={prevPower} />
+          <>
+            {activeTab === 'current' && (
+              <CurrentPage
+                graphRange={graphRange}
+                graphData={graphData}
+                onRangeChange={handleRangeChange}
+              />
+            )}
+            {activeTab === 'today' && (
+              <TodayPage energyData={todayEnergyGraph} />
+            )}
+            {activeTab === 'month' && <MonthPage />}
+          </>
         )}
       </div>
     </div>

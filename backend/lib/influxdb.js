@@ -205,6 +205,47 @@ class InfluxDBLogger {
         });
     }
 
+    async getDailyEnergyPerDay(start, stop) {
+        if (!this.connected || !this.queryApi) {
+            throw new Error('InfluxDB not connected');
+        }
+
+        // Get energy consumption per day (each day separately)
+        const query = `
+            from(bucket: "${config.influxdb.bucket}")
+            |> range(start: ${start}, stop: ${stop})
+            |> filter(fn: (r) => r._measurement == "Power")
+            |> filter(fn: (r) => r._field == "value")
+            |> map(fn: (r) => ({ r with _value: r._value / 1000.0 }))
+            |> aggregateWindow(every: 1d, fn: (tables=<-, column) => 
+                tables |> integral(unit: 1h), createEmpty: false)
+            |> yield(name: "daily_per_day")
+        `;
+
+        return new Promise((resolve, reject) => {
+            const results = [];
+            this.queryApi.queryRows(query, {
+                next(row, tableMeta) {
+                    const obj = tableMeta.toObject(row);
+                    const value = obj._value;
+                    if (value !== null && value !== undefined && !isNaN(value)) {
+                        results.push({
+                            value: value,
+                            timestamp: obj._time
+                        });
+                    }
+                },
+                error(error) {
+                    console.error('InfluxDB daily per day query error:', error);
+                    reject(error);
+                },
+                complete() {
+                    resolve(results);
+                }
+            });
+        });
+    }
+
     disconnect() {
         if (this.writeApi) {
             this.writeApi.close();

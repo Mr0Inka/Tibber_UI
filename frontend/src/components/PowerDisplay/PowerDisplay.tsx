@@ -38,3 +38,33 @@ export function PowerDisplay({ power, prevPower, consumption }: PowerDisplayProp
     </div>
   )
 }
+
+interface MonthDisplayProps {
+  dailyAverage: number | null
+  monthConsumption: number | null
+}
+
+export function MonthDisplay({ dailyAverage, monthConsumption }: MonthDisplayProps) {
+  return (
+    <div className="power-display">
+      <div className="value-box">
+        <div className="consumption">
+          <span className="consumption-number">
+            {dailyAverage !== null ? dailyAverage.toFixed(2) : '--'}
+          </span>
+          <span className="unit">kWh</span>
+        </div>
+        <div className="subtitle">Daily Average</div>
+      </div>
+      <div className="value-box">
+        <div className="consumption">
+          <span className="consumption-number">
+            {monthConsumption !== null ? monthConsumption.toFixed(2) : '--'}
+          </span>
+          <span className="unit">kWh</span>
+        </div>
+        <div className="subtitle">This Month</div>
+      </div>
+    </div>
+  )
+}

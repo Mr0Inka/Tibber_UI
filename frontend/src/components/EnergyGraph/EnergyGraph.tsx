@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react'
-import type { PowerHistoryData } from '../../types'
-import './PowerGraph.css'
+import type { EnergyData } from '../../types'
+import './EnergyGraph.css'
 
-interface PowerGraphProps {
-  data: PowerHistoryData[]
+interface EnergyGraphProps {
+  data: EnergyData[]
 }
 
 interface HoverData {
@@ -13,7 +13,7 @@ interface HoverData {
   y: number
 }
 
-export function PowerGraph({ data }: PowerGraphProps) {
+export function EnergyGraph({ data }: EnergyGraphProps) {
   const [hoverData, setHoverData] = useState<HoverData | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
@@ -21,27 +21,17 @@ export function PowerGraph({ data }: PowerGraphProps) {
 
   const width = 800
   const height = 750
-  const padding = { top: 20, right: 10, bottom: 10, left: 10 }
+  const padding = { top: 20, right: 10, bottom: 40, left: 10 }
   const chartWidth = width - padding.left - padding.right
   const chartHeight = height - padding.top - padding.bottom
 
+  // Get max value with some headroom
   const values = data.map(d => d.value)
-  const highestValue = Math.max(...values, 1)
-  const lowestValue = Math.min(...values.filter(v => v > 0), highestValue)
-  
-  // Logarithmic scale: dynamic min based on data, max with headroom
-  const minValue = Math.max(lowestValue * 0.5, 1) // 50% below lowest, minimum 1
-  const maxValue = highestValue * 1.5 // 50% headroom above highest
-  
-  const minLog = Math.log10(minValue)
-  const maxLog = Math.log10(Math.max(maxValue, 100))
-  const logRange = maxLog - minLog
+  const maxValue = Math.max(...values, 0.1) * 1.1
 
-  // Convert value to Y position using log scale
+  // Linear scale from 0 to max
   const valueToY = (value: number): number => {
-    const safeValue = Math.max(value, minValue)
-    const logValue = Math.log10(safeValue)
-    const normalized = (logValue - minLog) / logRange
+    const normalized = value / maxValue
     return chartHeight - normalized * chartHeight
   }
 
@@ -59,11 +49,22 @@ export function PowerGraph({ data }: PowerGraphProps) {
   // Format timestamp for hover display
   const formatHoverTime = (timestamp: string) => {
     const date = new Date(timestamp)
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
   }
 
-  // Logarithmic grid lines at powers of 10 (only within visible range)
-  const gridValues = [1, 10, 100, 1000, 10000, 100000].filter(v => v >= minValue && v <= maxValue)
+  // Generate time labels for midnight to midnight
+  const timeLabels = [0, 6, 12, 18, 24].map(hour => ({
+    hour,
+    x: (hour / 24) * chartWidth,
+    label: `${hour.toString().padStart(2, '0')}:00`
+  }))
+
+  // Grid lines for kWh values
+  const gridStep = maxValue > 10 ? 5 : maxValue > 5 ? 2 : maxValue > 2 ? 1 : 0.5
+  const gridValues: number[] = []
+  for (let v = gridStep; v < maxValue; v += gridStep) {
+    gridValues.push(v)
+  }
 
   const updateHoverFromPosition = (clientX: number) => {
     if (!svgRef.current || data.length === 0) return
@@ -108,12 +109,12 @@ export function PowerGraph({ data }: PowerGraphProps) {
   }
 
   return (
-    <div className="power-graph-wrapper">
+    <div className="energy-graph-wrapper">
       {/* Hover info display */}
       <div className="hover-info">
         {hoverData ? (
           <>
-            <span className="hover-value">{Math.round(hoverData.value)} W</span>
+            <span className="hover-value">{hoverData.value.toFixed(2)} kWh</span>
             <span className="hover-time">{formatHoverTime(hoverData.timestamp)}</span>
           </>
         ) : (
@@ -124,7 +125,7 @@ export function PowerGraph({ data }: PowerGraphProps) {
       <svg 
         ref={svgRef}
         viewBox={`0 0 ${width} ${height}`}
-        className="power-graph-svg"
+        className="energy-graph-svg"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleLeave}
         onTouchStart={handleTouchStart}
@@ -132,14 +133,14 @@ export function PowerGraph({ data }: PowerGraphProps) {
         onTouchEnd={handleLeave}
       >
         <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id="energy-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#f97316" stopOpacity="0.3" />
             <stop offset="100%" stopColor="#f97316" stopOpacity="0.05" />
           </linearGradient>
         </defs>
         
         <g transform={`translate(${padding.left}, ${padding.top})`}>
-          {/* Logarithmic grid lines */}
+          {/* Grid lines */}
           {gridValues.map((value) => {
             const y = valueToY(value)
             return (
@@ -156,10 +157,23 @@ export function PowerGraph({ data }: PowerGraphProps) {
             )
           })}
 
+          {/* Vertical time grid lines */}
+          {timeLabels.slice(1, -1).map(({ hour, x }) => (
+            <line
+              key={hour}
+              x1={x}
+              y1={0}
+              x2={x}
+              y2={chartHeight}
+              stroke="#f0f0f0"
+              strokeWidth={1}
+            />
+          ))}
+
           {/* Area under curve */}
           <path
             d={`${pathData} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`}
-            fill="url(#gradient)"
+            fill="url(#energy-gradient)"
           />
 
           {/* Line */}
@@ -171,6 +185,20 @@ export function PowerGraph({ data }: PowerGraphProps) {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+
+          {/* Time labels */}
+          {timeLabels.map(({ hour, x, label }) => (
+            <text
+              key={hour}
+              x={x}
+              y={chartHeight + 25}
+              textAnchor="middle"
+              fill="#999"
+              fontSize="12"
+            >
+              {label}
+            </text>
+          ))}
 
           {/* Hover indicator */}
           {hoverData && (

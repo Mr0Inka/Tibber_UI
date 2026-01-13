@@ -1,6 +1,6 @@
 import './Tabs.css'
 
-type TabType = 'today' | 'month'
+type TabType = 'current' | 'today' | 'month'
 
 interface TabsProps {
   activeTab: TabType
@@ -13,6 +13,13 @@ export function Tabs({ activeTab, onTabChange }: TabsProps) {
       <div className="tabs">
         <button
           type="button"
+          className={`tab ${activeTab === 'current' ? 'active' : ''}`}
+          onClick={() => onTabChange('current')}
+        >
+          Current
+        </button>
+        <button
+          type="button"
           className={`tab ${activeTab === 'today' ? 'active' : ''}`}
           onClick={() => onTabChange('today')}
         >
@@ -23,7 +30,7 @@ export function Tabs({ activeTab, onTabChange }: TabsProps) {
           className={`tab ${activeTab === 'month' ? 'active' : ''}`}
           onClick={() => onTabChange('month')}
         >
-          This Month
+          Month
         </button>
       </div>
     </div>

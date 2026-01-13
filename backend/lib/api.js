@@ -206,6 +206,24 @@ class API {
             }
         });
 
+        // Cumulative energy for today (for the Today graph - midnight to now)
+        this.app.get('/api/energy/today/cumulative', async (req, res) => {
+            try {
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+                const stop = now.toISOString();
+                console.log(`📊 Fetching cumulative energy from ${start} to ${stop}`);
+                
+                // Get energy data at 5-minute intervals throughout the day
+                const data = await this.influxLogger.getEnergyHistory(start, stop, '5m');
+                console.log(`📊 Retrieved ${data.length} cumulative energy points`);
+                res.json({ success: true, data });
+            } catch (error) {
+                console.error('❌ Error fetching cumulative energy:', error);
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
         this.app.get('/api/energy/today/hourly', async (req, res) => {
             try {
                 const now = new Date();
@@ -244,6 +262,76 @@ class API {
                 const data = await this.influxLogger.getEnergyHistory(start, stop, '1h');
                 res.json({ success: true, data });
             } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Month-to-date energy consumption
+        this.app.get('/api/energy/month', async (req, res) => {
+            try {
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0).toISOString();
+                const stop = now.toISOString();
+                console.log(`📊 Fetching month-to-date energy from ${start} to ${stop}`);
+                const data = await this.influxLogger.getEnergyHistory(start, stop, '1h');
+                console.log(`📊 Retrieved ${data.length} monthly data points`);
+                res.json({ success: true, data });
+            } catch (error) {
+                console.error('❌ Error fetching month energy:', error);
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Daily average for current month (excluding today)
+        this.app.get('/api/energy/month/daily-average', async (req, res) => {
+            try {
+                const now = new Date();
+                // Start of month
+                const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0).toISOString();
+                // Start of today (excluding today)
+                const stop = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+
+                // Check if we're on the first day of the month
+                if (now.getDate() === 1) {
+                    return res.json({
+                        success: true,
+                        data: {
+                            average: null,
+                            days: 0,
+                            total: 0
+                        }
+                    });
+                }
+
+                console.log(`📊 Fetching daily average from ${start} to ${stop}`);
+                const data = await this.influxLogger.getDailyEnergyPerDay(start, stop);
+                console.log(`📊 Retrieved ${data.length} daily data points`);
+
+                if (data.length === 0) {
+                    return res.json({
+                        success: true,
+                        data: {
+                            average: null,
+                            days: 0,
+                            total: 0
+                        }
+                    });
+                }
+
+                const total = data.reduce((sum, d) => sum + d.value, 0);
+                const average = total / data.length;
+
+                res.json({
+                    success: true,
+                    data: {
+                        average,
+                        days: data.length,
+                        total,
+                        dailyData: data
+                    }
+                });
+            } catch (error) {
+                console.error('❌ Error fetching daily average:', error);
                 res.status(500).json({ success: false, error: error.message });
             }
         });

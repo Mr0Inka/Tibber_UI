@@ -1,20 +1,8 @@
-import { PowerDisplay } from '../../components/PowerDisplay/PowerDisplay'
-import type { PowerData } from '../../types'
 import './MonthPage.css'
 
-interface MonthPageProps {
-  power: PowerData
-  prevPower: number | null
-}
-
-export function MonthPage({ power, prevPower }: MonthPageProps) {
+export function MonthPage() {
   return (
-    <div className="page">
-      <PowerDisplay 
-        power={power} 
-        prevPower={prevPower} 
-        consumption={null} 
-      />
+    <div className="page month-page">
       {/* Month view content can be added here */}
     </div>
   )
