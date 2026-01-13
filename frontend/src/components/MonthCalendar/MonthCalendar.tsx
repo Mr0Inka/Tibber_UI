@@ -1,0 +1,159 @@
+import type { DailyEnergyData } from '../../types'
+import './MonthCalendar.css'
+
+interface MonthCalendarProps {
+  year: number
+  month: number // 0-indexed (0 = January)
+  dailyData: Map<string, number> // key: "YYYY-MM-DD", value: kWh
+}
+
+const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
+export function MonthCalendar({ year, month, dailyData }: MonthCalendarProps) {
+  const monthName = new Date(year, month).toLocaleString('en-US', { month: 'long' })
+  
+  // Get first day of month and number of days
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  const daysInMonth = lastDay.getDate()
+  const startDayOfWeek = firstDay.getDay() // 0 = Sunday
+  
+  // Calculate total for the month
+  let monthTotal = 0
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    monthTotal += dailyData.get(dateKey) || 0
+  }
+  
+  // Create calendar grid
+  const weeks: (number | null)[][] = []
+  let currentWeek: (number | null)[] = []
+  
+  // Fill in empty days at the start
+  for (let i = 0; i < startDayOfWeek; i++) {
+    currentWeek.push(null)
+  }
+  
+  // Fill in days of the month
+  for (let day = 1; day <= daysInMonth; day++) {
+    currentWeek.push(day)
+    if (currentWeek.length === 7) {
+      weeks.push(currentWeek)
+      currentWeek = []
+    }
+  }
+  
+  // Fill in remaining empty days at the end
+  while (currentWeek.length > 0 && currentWeek.length < 7) {
+    currentWeek.push(null)
+  }
+  if (currentWeek.length > 0) {
+    weeks.push(currentWeek)
+  }
+  
+  // Get value for a day
+  const getDayValue = (day: number): number => {
+    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    return dailyData.get(dateKey) || 0
+  }
+  
+  // Check if we have actual data for this day (exists in the map)
+  const hasDataForDay = (day: number): boolean => {
+    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    return dailyData.has(dateKey)
+  }
+  
+  // Check if day is in the past (not today or future)
+  const isPastDay = (day: number): boolean => {
+    const today = new Date()
+    const dayDate = new Date(year, month, day)
+    return dayDate < new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  }
+
+  return (
+    <div className="month-calendar">
+      <div className="month-header">
+        <h3 className="month-title">{monthName}, {year}</h3>
+        <div className="month-total">
+          <span className="total-value">{monthTotal.toFixed(2)}</span>
+          <span className="total-unit">kWh</span>
+        </div>
+      </div>
+      
+      <div className="calendar-grid">
+        <div className="weekday-row">
+          {WEEKDAYS.map(day => (
+            <div key={day} className="weekday">{day}</div>
+          ))}
+        </div>
+        
+        {weeks.map((week, weekIndex) => (
+          <div key={weekIndex} className="week-row">
+            {week.map((day, dayIndex) => {
+              if (day === null) {
+                return <div key={dayIndex} className="day-cell empty" />
+              }
+              
+              const isPast = isPastDay(day)
+              const hasData = hasDataForDay(day)
+              const value = getDayValue(day)
+              
+              return (
+                <div key={dayIndex} className="day-cell">
+                  <span className="day-number">{day}</span>
+                  <div className={`day-value ${hasData ? 'has-data' : isPast ? 'past-no-data' : 'future'}`}>
+                    {isPast ? value.toFixed(2) : ''}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+interface MonthCalendarListProps {
+  dailyEnergyHistory: DailyEnergyData[]
+}
+
+export function MonthCalendarList({ dailyEnergyHistory }: MonthCalendarListProps) {
+  // Create a map of date -> value for quick lookup
+  const dailyDataMap = new Map<string, number>()
+  dailyEnergyHistory.forEach(entry => {
+    // Parse as UTC to match InfluxDB timestamps
+    const date = new Date(entry.timestamp)
+    // Use UTC date components since InfluxDB returns UTC timestamps
+    const dateKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`
+    dailyDataMap.set(dateKey, entry.value)
+  })
+  
+  // Debug: log the map contents
+  console.log('Daily data map:', dailyDataMap.size, 'entries')
+  if (dailyDataMap.size > 0) {
+    console.log('Map keys:', Array.from(dailyDataMap.keys()).slice(0, 5))
+  }
+  
+  // Generate list of months (current month and 11 previous months)
+  const months: { year: number; month: number }[] = []
+  const now = new Date()
+  
+  for (let i = 0; i < 12; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    months.push({ year: date.getFullYear(), month: date.getMonth() })
+  }
+  
+  return (
+    <div className="month-calendar-list">
+      {months.map(({ year, month }) => (
+        <MonthCalendar
+          key={`${year}-${month}`}
+          year={year}
+          month={month}
+          dailyData={dailyDataMap}
+        />
+      ))}
+    </div>
+  )
+}

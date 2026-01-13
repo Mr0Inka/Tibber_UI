@@ -223,17 +223,15 @@ class InfluxDBLogger {
             throw new Error('InfluxDB not connected');
         }
 
-        // Get power data and calculate daily energy (kWh) from it
-        // Calculate energy by integrating power over time, grouped by day
+        // Get mean power per day and calculate kWh
+        // Energy (kWh) = mean_power (W) / 1000 * 24 hours
         const query = `
             from(bucket: "${config.influxdb.bucket}")
             |> range(start: ${start}, stop: ${stop})
             |> filter(fn: (r) => r._measurement == "Power")
             |> filter(fn: (r) => r._field == "value")
-            |> aggregateWindow(every: 1d, fn: mean, createEmpty: false)
-            |> map(fn: (r) => ({ r with _value: r._value / 1000.0 }))
-            |> group(columns: ["_start", "_stop", "_field", "_measurement"])
-            |> integral(unit: 1h)
+            |> aggregateWindow(every: 1d, fn: mean, createEmpty: false, timeSrc: "_start")
+            |> map(fn: (r) => ({ r with _value: r._value / 1000.0 * 24.0 }))
             |> yield(name: "daily")
         `;
 
@@ -255,6 +253,7 @@ class InfluxDBLogger {
                     reject(error);
                 },
                 complete() {
+                    console.log(`📊 Daily energy query returned ${results.length} results`);
                     resolve(results);
                 }
             });

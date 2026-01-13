@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { PowerData, PowerHistoryData, EnergyData, CumulativeEnergyData, ApiResponse } from '../types'
+import type { PowerData, PowerHistoryData, EnergyData, CumulativeEnergyData, DailyEnergyData, ApiResponse } from '../types'
 import { API_URL } from '../config/api'
 
 type TimeRange = '1m' | '5m' | '30m' | '1h' | '6h' | '12h' | '24h'
@@ -38,6 +38,7 @@ export function usePowerData() {
   const [dailyAverage, setDailyAverage] = useState<number | null>(null)
   const [graphRange, setGraphRange] = useState<TimeRange>('1h')
   const [graphData, setGraphData] = useState<PowerHistoryData[]>([])
+  const [dailyEnergyHistory, setDailyEnergyHistory] = useState<DailyEnergyData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -180,18 +181,41 @@ export function usePowerData() {
     }
   }, [])
 
+  const fetchDailyEnergyHistory = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/energy/daily/12months`)
+      const data: ApiResponse = await response.json()
+      
+      if (data.success && Array.isArray(data.data)) {
+        console.log('Daily energy data received:', data.data.length, 'entries')
+        if (data.data.length > 0) {
+          console.log('Sample entry:', data.data[0])
+        }
+        setDailyEnergyHistory(data.data as DailyEnergyData[])
+      } else {
+        console.log('No daily energy data received')
+        setDailyEnergyHistory([])
+      }
+    } catch (err) {
+      console.error('Failed to fetch daily energy history:', err)
+      setDailyEnergyHistory([])
+    }
+  }, [])
+
   useEffect(() => {
     fetchCurrentPower()
     fetchTodayConsumption()
     fetchTodayEnergyGraph()
     fetchMonthData()
     fetchGraphData(graphRange)
+    fetchDailyEnergyHistory()
     
     const powerInterval = setInterval(fetchCurrentPower, 1000)
     const consumptionInterval = setInterval(fetchTodayConsumption, 5000)
     const energyGraphInterval = setInterval(fetchTodayEnergyGraph, 60000)
     const monthInterval = setInterval(fetchMonthData, 60000)
     const graphInterval = setInterval(() => fetchGraphData(graphRange), 60000)
+    const dailyHistoryInterval = setInterval(fetchDailyEnergyHistory, 300000) // every 5 minutes
     
     return () => {
       clearInterval(powerInterval)
@@ -199,8 +223,9 @@ export function usePowerData() {
       clearInterval(energyGraphInterval)
       clearInterval(monthInterval)
       clearInterval(graphInterval)
+      clearInterval(dailyHistoryInterval)
     }
-  }, [fetchCurrentPower, fetchTodayConsumption, fetchTodayEnergyGraph, fetchMonthData, fetchGraphData, graphRange])
+  }, [fetchCurrentPower, fetchTodayConsumption, fetchTodayEnergyGraph, fetchMonthData, fetchGraphData, fetchDailyEnergyHistory, graphRange])
 
   return {
     power,
@@ -212,6 +237,7 @@ export function usePowerData() {
     dailyAverage,
     graphRange,
     graphData,
+    dailyEnergyHistory,
     loading,
     error,
     setGraphRange,

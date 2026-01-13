@@ -1,0 +1,142 @@
+.month-calendar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+  overflow-y: auto;
+}
+
+.month-calendar {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0 0.25rem;
+}
+
+.month-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.month-total {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.total-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f97316;
+}
+
+.total-unit {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.calendar-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.weekday {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #888;
+  text-align: center;
+  padding: 0.25rem;
+}
+
+.week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  position: relative;
+  min-height: 48px;
+}
+
+.day-cell.empty {
+  background: transparent;
+}
+
+.day-number {
+  font-size: 0.65rem;
+  color: #666;
+  position: absolute;
+  top: 3px;
+  right: 5px;
+}
+
+.day-value {
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.35rem 0.2rem;
+  width: calc(100% - 6px);
+  text-align: center;
+  margin-top: 8px;
+}
+
+.day-value.has-data {
+  background: #f97316;
+  color: white;
+}
+
+.day-value.past-no-data {
+  background: #d1d5db;
+  color: #666;
+}
+
+.day-value.future {
+  background: #e5e7eb;
+  color: transparent;
+  min-height: 1.2rem;
+}
+
+/* Mobile adjustments */
+@media (max-width: 400px) {
+  .month-calendar {
+    padding: 0.75rem;
+  }
+
+  .day-cell {
+    min-height: 42px;
+  }
+
+  .day-number {
+    font-size: 0.6rem;
+  }
+
+  .day-value {
+    font-size: 0.6rem;
+    padding: 0.25rem 0.15rem;
+  }
+}

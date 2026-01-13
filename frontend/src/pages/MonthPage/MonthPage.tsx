@@ -1,9 +1,15 @@
+import { MonthCalendarList } from '../../components/MonthCalendar/MonthCalendar'
+import type { DailyEnergyData } from '../../types'
 import './MonthPage.css'
 
-export function MonthPage() {
+interface MonthPageProps {
+  dailyEnergyHistory: DailyEnergyData[]
+}
+
+export function MonthPage({ dailyEnergyHistory }: MonthPageProps) {
   return (
     <div className="page month-page">
-      {/* Month view content can be added here */}
+      <MonthCalendarList dailyEnergyHistory={dailyEnergyHistory} />
     </div>
   )
 }

@@ -22,6 +22,7 @@ function App() {
     dailyAverage,
     graphRange,
     graphData,
+    dailyEnergyHistory,
     loading,
     error,
     setGraphRange,
@@ -78,7 +79,7 @@ function App() {
             {activeTab === 'today' && (
               <TodayPage energyData={todayEnergyGraph} yesterdayData={yesterdayEnergyGraph} />
             )}
-            {activeTab === 'month' && <MonthPage />}
+            {activeTab === 'month' && <MonthPage dailyEnergyHistory={dailyEnergyHistory} />}
           </>
         )}
       </div>
