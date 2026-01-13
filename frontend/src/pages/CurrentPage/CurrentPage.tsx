@@ -10,20 +10,20 @@ interface CurrentPageProps {
   graphRange: TimeRange
   graphData: PowerHistoryData[]
   avg15m: number | null
-  avg3h: number | null
+  avg24h: number | null
   onRangeChange: (range: TimeRange) => void
 }
 
 const HIGHER_TEMPLATES = [
-  { prefix: "Recent power usage is ", suffix: " higher than the 3-hour average." },
+  { prefix: "Recent power usage is ", suffix: " higher than the 24-hour average." },
   { prefix: "The last 15 minutes show ", suffix: " more power than usual." },
-  { prefix: "Current consumption is ", suffix: " above the recent average." },
+  { prefix: "Current consumption is ", suffix: " above the daily average." },
 ]
 
 const LOWER_TEMPLATES = [
-  { prefix: "Recent power usage is ", suffix: " lower than the 3-hour average." },
+  { prefix: "Recent power usage is ", suffix: " lower than the 24-hour average." },
   { prefix: "The last 15 minutes show ", suffix: " less power than usual." },
-  { prefix: "Current consumption is ", suffix: " below the recent average." },
+  { prefix: "Current consumption is ", suffix: " below the daily average." },
 ]
 
 const SIMILAR_TEMPLATES = [
@@ -32,17 +32,22 @@ const SIMILAR_TEMPLATES = [
   { prefix: "Power draw is ", highlight: "close to average", suffix: "." },
 ]
 
-export function CurrentPage({ graphRange, graphData, avg15m, avg3h, onRangeChange }: CurrentPageProps) {
+export function CurrentPage({ graphRange, graphData, avg15m, avg24h, onRangeChange }: CurrentPageProps) {
   const isLive = graphRange === '1m' || graphRange === '5m'
   
   const comparison = useMemo(() => {
-    if (avg15m === null || avg3h === null || avg3h === 0) return null
+    if (avg15m === null || avg24h === null || avg24h === 0) return null
     
-    const percentDiff = Math.round(((avg15m - avg3h) / avg3h) * 100)
+    const percentDiff = Math.round(((avg15m - avg24h) / avg24h) * 100)
     const absPercent = Math.abs(percentDiff)
     
     // Pick a random template (changes every minute)
     const seed = Math.floor(Date.now() / 60000)
+    
+    // Format the values for display
+    const avg15mDisplay = Math.round(avg15m)
+    const avg24hDisplay = Math.round(avg24h)
+    const valuesText = `(${avg15mDisplay}W vs ${avg24hDisplay}W avg)`
     
     if (absPercent < 10) {
       const template = SIMILAR_TEMPLATES[seed % SIMILAR_TEMPLATES.length]
@@ -50,6 +55,7 @@ export function CurrentPage({ graphRange, graphData, avg15m, avg3h, onRangeChang
         prefix: template.prefix,
         highlight: template.highlight,
         suffix: template.suffix,
+        values: valuesText,
         type: 'similar' as const
       }
     } else if (percentDiff > 0) {
@@ -58,6 +64,7 @@ export function CurrentPage({ graphRange, graphData, avg15m, avg3h, onRangeChang
         prefix: template.prefix,
         highlight: `${absPercent}%`,
         suffix: template.suffix,
+        values: valuesText,
         type: 'higher' as const
       }
     } else {
@@ -66,10 +73,11 @@ export function CurrentPage({ graphRange, graphData, avg15m, avg3h, onRangeChang
         prefix: template.prefix,
         highlight: `${absPercent}%`,
         suffix: template.suffix,
+        values: valuesText,
         type: 'lower' as const
       }
     }
-  }, [avg15m, avg3h])
+  }, [avg15m, avg24h])
   
   return (
     <div className="page">
@@ -101,6 +109,7 @@ export function CurrentPage({ graphRange, graphData, avg15m, avg3h, onRangeChang
             <span className={`highlight ${comparison.type}`}>{comparison.highlight}</span>
             {comparison.suffix}
           </p>
+          <p className="comparison-values">{comparison.values}</p>
         </div>
       )}
     </div>

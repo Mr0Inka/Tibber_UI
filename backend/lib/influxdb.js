@@ -130,18 +130,22 @@ class InfluxDBLogger {
         });
     }
 
-    async getPowerHistory(start, stop, interval = '1m') {
+    async getPowerHistory(start, stop, interval = '1m', aggregation = 'max') {
         if (!this.connected || !this.queryApi) {
             throw new Error('InfluxDB not connected');
         }
+
+        // Validate aggregation function
+        const validAggregations = ['max', 'mean', 'min'];
+        const aggFn = validAggregations.includes(aggregation) ? aggregation : 'max';
 
         const query = `
             from(bucket: "${config.influxdb.bucket}")
             |> range(start: ${start}, stop: ${stop})
             |> filter(fn: (r) => r._measurement == "Power")
             |> filter(fn: (r) => r._field == "value")
-            |> aggregateWindow(every: ${interval}, fn: max, createEmpty: false)
-            |> yield(name: "max")
+            |> aggregateWindow(every: ${interval}, fn: ${aggFn}, createEmpty: false)
+            |> yield(name: "${aggFn}")
         `;
 
         return new Promise((resolve, reject) => {

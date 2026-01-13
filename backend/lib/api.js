@@ -112,12 +112,13 @@ class API {
         });
 
         // Flexible power endpoint with time range and interval parameters
-        // Usage: /api/power?range=5m&interval=1m
+        // Usage: /api/power?range=5m&interval=1m&agg=max
         // Range options: 5m, 1h, 3h, 12h, 24h
         // Interval options: 1m, 5m, 15m, 30m, 1h (or any valid Flux duration)
+        // Aggregation options: max (default), mean, min
         this.app.get('/api/power', async (req, res) => {
             try {
-                const { range = '1h', interval = '1m' } = req.query;
+                const { range = '1h', interval = '1m', agg = 'max' } = req.query;
 
                 // Validate range parameter
                 const validRanges = ['1m', '5m', '15m', '30m', '1h', '3h', '6h', '12h', '24h'];
@@ -164,8 +165,8 @@ class API {
                 const startISO = start.toISOString();
                 const stopISO = now.toISOString();
 
-                console.log(`📊 Fetching power data: range=${range}, interval=${interval}, from ${startISO} to ${stopISO}`);
-                const data = await this.influxLogger.getPowerHistory(startISO, stopISO, interval);
+                console.log(`📊 Fetching power data: range=${range}, interval=${interval}, agg=${agg}, from ${startISO} to ${stopISO}`);
+                const data = await this.influxLogger.getPowerHistory(startISO, stopISO, interval, agg);
                 console.log(`📊 Retrieved ${data.length} power data points`);
 
                 res.json({

@@ -51,10 +51,16 @@ export function TodayPage({ energyData, yesterdayData }: TodayPageProps) {
       }
     }
     
-    if (!yesterdayAtSameTime || yesterdayAtSameTime === 0) return null
+    // Don't compare if yesterday's data is missing or too low (indicates no real data)
+    if (!yesterdayAtSameTime || yesterdayAtSameTime < 0.1) return null
     
     const percentDiff = Math.round(((todayLatest - yesterdayAtSameTime) / yesterdayAtSameTime) * 100)
     const absPercent = Math.abs(percentDiff)
+    
+    // Format the values for display
+    const todayDisplay = todayLatest.toFixed(2)
+    const yesterdayDisplay = yesterdayAtSameTime.toFixed(2)
+    const valuesText = `(${todayDisplay} kWh today vs ${yesterdayDisplay} kWh yesterday)`
     
     // Pick a random template (changes every minute)
     const seed = Math.floor(Date.now() / 60000)
@@ -65,6 +71,7 @@ export function TodayPage({ energyData, yesterdayData }: TodayPageProps) {
         prefix: template.prefix,
         highlight: template.highlight,
         suffix: template.suffix,
+        values: valuesText,
         type: 'similar' as const
       }
     } else if (percentDiff > 0) {
@@ -73,6 +80,7 @@ export function TodayPage({ energyData, yesterdayData }: TodayPageProps) {
         prefix: template.prefix,
         highlight: `${absPercent}%`,
         suffix: template.suffix,
+        values: valuesText,
         type: 'higher' as const
       }
     } else {
@@ -81,6 +89,7 @@ export function TodayPage({ energyData, yesterdayData }: TodayPageProps) {
         prefix: template.prefix,
         highlight: `${absPercent}%`,
         suffix: template.suffix,
+        values: valuesText,
         type: 'lower' as const
       }
     }
@@ -105,6 +114,7 @@ export function TodayPage({ energyData, yesterdayData }: TodayPageProps) {
             <span className={`highlight ${comparison.type}`}>{comparison.highlight}</span>
             {comparison.suffix}
           </p>
+          <p className="comparison-values">{comparison.values}</p>
         </div>
       )}
     </div>

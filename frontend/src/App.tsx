@@ -31,7 +31,7 @@ function App() {
     dailyEnergyHistory,
     todayMinMax,
     avg15m,
-    avg3h,
+    avg24h,
     loading,
     error,
     setGraphRange,
@@ -98,7 +98,7 @@ function App() {
                 graphRange={graphRange}
                 graphData={graphData}
                 avg15m={avg15m}
-                avg3h={avg3h}
+                avg24h={avg24h}
                 onRangeChange={handleRangeChange}
               />
             )}

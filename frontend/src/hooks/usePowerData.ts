@@ -41,7 +41,7 @@ export function usePowerData() {
   const [dailyEnergyHistory, setDailyEnergyHistory] = useState<DailyEnergyData[]>([])
   const [todayMinMax, setTodayMinMax] = useState<MinMaxPower>({ min: null, max: null })
   const [avg15m, setAvg15m] = useState<number | null>(null)
-  const [avg3h, setAvg3h] = useState<number | null>(null)
+  const [avg24h, setAvg24h] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -205,8 +205,8 @@ export function usePowerData() {
 
   const fetchPowerAverages = useCallback(async () => {
     try {
-      // Fetch 15-minute average
-      const res15m = await fetch(`${API_URL}/api/power?range=15m&interval=1m`)
+      // Fetch 15-minute average using mean aggregation
+      const res15m = await fetch(`${API_URL}/api/power?range=15m&interval=1m&agg=mean`)
       const data15m: ApiResponse = await res15m.json()
       
       if (data15m.success && Array.isArray(data15m.data)) {
@@ -216,14 +216,14 @@ export function usePowerData() {
         }
       }
       
-      // Fetch 3-hour average
-      const res3h = await fetch(`${API_URL}/api/power?range=3h&interval=5m`)
-      const data3h: ApiResponse = await res3h.json()
+      // Fetch 24-hour average using mean aggregation
+      const res24h = await fetch(`${API_URL}/api/power?range=24h&interval=5m&agg=mean`)
+      const data24h: ApiResponse = await res24h.json()
       
-      if (data3h.success && Array.isArray(data3h.data)) {
-        const values = (data3h.data as PowerHistoryData[]).map(d => d.value).filter(v => v > 0)
+      if (data24h.success && Array.isArray(data24h.data)) {
+        const values = (data24h.data as PowerHistoryData[]).map(d => d.value).filter(v => v > 0)
         if (values.length > 0) {
-          setAvg3h(values.reduce((a, b) => a + b, 0) / values.length)
+          setAvg24h(values.reduce((a, b) => a + b, 0) / values.length)
         }
       }
     } catch (err) {
@@ -301,7 +301,7 @@ export function usePowerData() {
     dailyEnergyHistory,
     todayMinMax,
     avg15m,
-    avg3h,
+    avg24h,
     loading,
     error,
     setGraphRange,
