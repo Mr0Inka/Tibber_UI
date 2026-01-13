@@ -3,6 +3,16 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .hover-info {
@@ -37,6 +47,8 @@
   display: block;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
+  border-radius: 0 0 16px 16px;
+  overflow: hidden;
 }
 
 .hover-line {

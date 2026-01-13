@@ -1,39 +1,60 @@
 .power-display {
   display: flex;
   flex-direction: row;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: center;
-  gap: 3rem;
+  gap: 1.5rem;
   flex-wrap: nowrap;
   overflow: visible;
 }
 
-.power-value {
-  font-size: 3.5rem;
+.value-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 160px;
+}
+
+.power-value,
+.consumption {
+  font-size: 3rem;
   font-weight: 700;
   color: #1a1a1a;
   line-height: 1;
   display: inline-flex;
   align-items: baseline;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.25rem;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.number-container {
   position: relative;
-  min-height: 1.2em;
+  display: inline-flex;
+  justify-content: flex-end;
+  min-width: 4ch;
+}
+
+.consumption-number {
+  display: inline-block;
+  min-width: 5ch;
+  text-align: right;
 }
 
 .power-number {
   display: inline-block;
+  text-align: right;
 }
 
 .power-number.old-value {
   position: absolute;
-  left: 0;
-  animation: slideUpBlurOut 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  right: 0;
+  animation: slideUpBlurOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .power-number.new-value {
-  position: relative;
-  animation: slideInFromBottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes slideUpBlurOut {
@@ -43,58 +64,58 @@
     filter: blur(0);
   }
   100% {
-    transform: translateY(-15px);
+    transform: translateY(-12px);
     opacity: 0;
-    filter: blur(4px);
+    filter: blur(3px);
   }
 }
 
-@keyframes slideInFromBottom {
+@keyframes fadeIn {
   0% {
-    transform: translateY(10px);
     opacity: 0;
-    filter: blur(2px);
+  }
+  50% {
+    opacity: 0;
   }
   100% {
-    transform: translateY(0);
     opacity: 1;
-    filter: blur(0);
   }
-}
-
-.consumption {
-  font-size: 3.5rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  line-height: 1;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  white-space: nowrap;
 }
 
 .unit {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 500;
   color: #888;
-  margin-left: 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #999;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 @media (max-width: 640px) {
   .power-display {
-    gap: 2rem;
-    flex-wrap: wrap;
+    gap: 1rem;
   }
 
-  .power-value {
-    font-size: 2.5rem;
+  .value-box {
+    min-width: 120px;
   }
 
+  .power-value,
   .consumption {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
 
   .unit {
-    font-size: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .subtitle {
+    font-size: 0.625rem;
   }
 }

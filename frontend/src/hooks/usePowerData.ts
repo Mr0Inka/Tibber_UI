@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { PowerData, PowerHistoryData, HourlyData, EnergyData, ApiResponse } from '../types'
 import { API_URL } from '../config/api'
 
@@ -17,6 +17,19 @@ const getIntervalForRange = (range: TimeRange): string => {
   }
 }
 
+// Get range duration in milliseconds
+const getRangeDuration = (range: TimeRange): number => {
+  switch (range) {
+    case '1m': return 1 * 60 * 1000
+    case '5m': return 5 * 60 * 1000
+    case '30m': return 30 * 60 * 1000
+    case '1h': return 60 * 60 * 1000
+    case '6h': return 6 * 60 * 60 * 1000
+    case '12h': return 12 * 60 * 60 * 1000
+    case '24h': return 24 * 60 * 60 * 1000
+  }
+}
+
 export function usePowerData() {
   const [power, setPower] = useState<PowerData>({ value: null, timestamp: null })
   const [prevPower, setPrevPower] = useState<number | null>(null)
@@ -27,6 +40,10 @@ export function usePowerData() {
   const [graphLoading, setGraphLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Use ref to access current graphRange in callbacks without stale closures
+  const graphRangeRef = useRef(graphRange)
+  graphRangeRef.current = graphRange
 
   const fetchCurrentPower = useCallback(async () => {
     try {
@@ -34,14 +51,46 @@ export function usePowerData() {
       const data: ApiResponse = await response.json()
       
       if (data.success) {
-        const newPower = (data.data as PowerData).value
+        const newPowerData = data.data as PowerData
+        const newPower = newPowerData.value
+        
         setPower((prev) => {
           if (prev.value !== null && newPower !== null && newPower !== prev.value) {
             setPrevPower(prev.value)
             setTimeout(() => setPrevPower(null), 500)
           }
-          return data.data as PowerData
+          return newPowerData
         })
+        
+        // Add new value to graph data for live updates (only for short ranges with 1s intervals)
+        const currentRange = graphRangeRef.current
+        const isLiveRange = currentRange === '1m' || currentRange === '5m'
+        
+        if (isLiveRange && newPower !== null && newPowerData.timestamp) {
+          setGraphData((prevData) => {
+            const now = Date.now()
+            const rangeDuration = getRangeDuration(currentRange)
+            const cutoffTime = now - rangeDuration
+            
+            // Add new point
+            const newPoint: PowerHistoryData = {
+              value: newPower,
+              timestamp: newPowerData.timestamp!
+            }
+            
+            // Filter out old points and add new one
+            const filtered = prevData.filter(d => new Date(d.timestamp).getTime() > cutoffTime)
+            
+            // Avoid duplicates (same timestamp)
+            const lastPoint = filtered[filtered.length - 1]
+            if (lastPoint && lastPoint.timestamp === newPoint.timestamp) {
+              return filtered
+            }
+            
+            return [...filtered, newPoint]
+          })
+        }
+        
         setError(null)
       } else {
         setError('Failed to fetch power data')
@@ -140,7 +189,8 @@ export function usePowerData() {
     const powerInterval = setInterval(fetchCurrentPower, 1000)
     const consumptionInterval = setInterval(fetchTodayConsumption, 5000)
     const hourlyInterval = setInterval(fetchHourlyData, 60000)
-    const graphInterval = setInterval(() => fetchGraphData(graphRange), 30000)
+    // Refresh full graph data less frequently since we're adding live values
+    const graphInterval = setInterval(() => fetchGraphData(graphRange), 60000)
     
     return () => {
       clearInterval(powerInterval)

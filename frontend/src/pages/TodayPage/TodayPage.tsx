@@ -36,10 +36,8 @@ export function TodayPage({
       {/* Power Graph */}
       <div className="power-graph-container">
         <div className="power-graph">
-          {graphLoading ? (
-            <div className="graph-loading">Loading...</div>
-          ) : graphData.length > 0 ? (
-            <PowerGraph data={graphData} />
+          {graphData.length > 0 ? (
+            <PowerGraph key={graphRange} data={graphData} />
           ) : (
             <div className="graph-empty">No data available</div>
           )}

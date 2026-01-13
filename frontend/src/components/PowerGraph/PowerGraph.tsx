@@ -26,15 +26,25 @@ export function PowerGraph({ data }: PowerGraphProps) {
   const chartHeight = height - padding.top - padding.bottom
 
   const values = data.map(d => d.value)
-  const highestValue = Math.max(...values, 0)
+  const highestValue = Math.max(...values, 1)
   
-  // Always start at 0, minimum range of 100W, add 100W headroom above highest value
-  const maxValue = Math.max(highestValue + 100, 100)
+  // Logarithmic scale: min 1W, max is highest value + headroom
+  const minLog = 0 // log10(1) = 0
+  const maxLog = Math.log10(Math.max(highestValue * 1.2, 100))
+  const logRange = maxLog - minLog
+
+  // Convert value to Y position using log scale
+  const valueToY = (value: number): number => {
+    const safeValue = Math.max(value, 1) // Prevent log(0)
+    const logValue = Math.log10(safeValue)
+    const normalized = (logValue - minLog) / logRange
+    return chartHeight - normalized * chartHeight
+  }
 
   // Create SVG path for the line
   const points = data.map((d, i) => {
     const x = (i / (data.length - 1)) * chartWidth
-    const y = chartHeight - (d.value / maxValue) * chartHeight
+    const y = valueToY(d.value)
     return { x, y, value: d.value, timestamp: d.timestamp }
   })
 
@@ -48,11 +58,8 @@ export function PowerGraph({ data }: PowerGraphProps) {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
   }
 
-  // Y-axis grid lines (without labels)
-  const yTicks = 5
-  const yLabels = Array.from({ length: yTicks }, (_, i) => {
-    return (maxValue * i) / (yTicks - 1)
-  })
+  // Logarithmic grid lines at powers of 10 and mid-points
+  const gridValues = [1, 10, 100, 1000, 10000, 100000].filter(v => v <= Math.pow(10, maxLog))
 
   const updateHoverFromPosition = (clientX: number) => {
     if (!svgRef.current || data.length === 0) return
@@ -128,12 +135,12 @@ export function PowerGraph({ data }: PowerGraphProps) {
         </defs>
         
         <g transform={`translate(${padding.left}, ${padding.top})`}>
-          {/* Grid lines (without Y-axis labels) */}
-          {yLabels.map((value, i) => {
-            const y = chartHeight - (i / (yTicks - 1)) * chartHeight
+          {/* Logarithmic grid lines */}
+          {gridValues.map((value) => {
+            const y = valueToY(value)
             return (
               <line
-                key={i}
+                key={value}
                 x1={0}
                 y1={y}
                 x2={chartWidth}

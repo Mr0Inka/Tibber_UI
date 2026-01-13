@@ -10,20 +10,30 @@ interface PowerDisplayProps {
 export function PowerDisplay({ power, prevPower, consumption }: PowerDisplayProps) {
   return (
     <div className="power-display">
-      <div className="power-value">
-        {prevPower !== null && (
-          <span className="power-number old-value">
-            {Math.round(prevPower)}
+      <div className="value-box">
+        <div className="power-value">
+          <span className="number-container">
+            {prevPower !== null && (
+              <span className="power-number old-value">
+                {Math.round(prevPower)}
+              </span>
+            )}
+            <span key={power.value} className="power-number new-value">
+              {power.value !== null ? `${Math.round(power.value)}` : '--'}
+            </span>
           </span>
-        )}
-        <span key={power.value} className="power-number new-value">
-          {power.value !== null ? `${Math.round(power.value)}` : '--'}
-        </span>
-        <span className="unit">W</span>
+          <span className="unit">W</span>
+        </div>
+        <div className="subtitle">Current Power</div>
       </div>
-      <div className="consumption">
-        {consumption !== null ? consumption.toFixed(2) : '--'}
-        <span className="unit">kWh</span>
+      <div className="value-box">
+        <div className="consumption">
+          <span className="consumption-number">
+            {consumption !== null ? consumption.toFixed(2) : '--'}
+          </span>
+          <span className="unit">kWh</span>
+        </div>
+        <div className="subtitle">Today</div>
       </div>
     </div>
   )
