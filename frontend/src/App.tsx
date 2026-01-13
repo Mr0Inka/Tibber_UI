@@ -35,34 +35,30 @@ function App() {
   return (
     <div className="app">
       <div className="sticky-header">
-        <div className="sticky-header-inner">
-          <header className="header">
-            <button type="button" className="header-button left"></button>
-            <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
-            <button type="button" className="header-button right"></button>
-          </header>
-          
-          {!loading && !error && (
-            <section className="top-section">
-              {(activeTab === 'current' || activeTab === 'today') && (
-                <PowerDisplay 
-                  power={power} 
-                  prevPower={prevPower} 
-                  consumption={todayConsumption}
-                />
-              )}
-              {activeTab === 'month' && (
-                <MonthDisplay 
-                  dailyAverage={dailyAverage}
-                  monthConsumption={monthConsumption}
-                />
-              )}
-            </section>
-          )}
-        </div>
+        <header className="header">
+          <button type="button" className="header-button left"></button>
+          <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
+          <button type="button" className="header-button right"></button>
+        </header>
+        
+        {!loading && !error && (
+          <section className="top-section">
+            {(activeTab === 'current' || activeTab === 'today') && (
+              <PowerDisplay 
+                power={power} 
+                prevPower={prevPower} 
+                consumption={todayConsumption}
+              />
+            )}
+            {activeTab === 'month' && (
+              <MonthDisplay 
+                dailyAverage={dailyAverage}
+                monthConsumption={monthConsumption}
+              />
+            )}
+          </section>
+        )}
       </div>
-
-      <div className="header-spacer"></div>
 
       <div className="content">
         {loading ? (

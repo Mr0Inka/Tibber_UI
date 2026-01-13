@@ -214,8 +214,8 @@ class API {
                 const stop = now.toISOString();
                 console.log(`📊 Fetching cumulative energy from ${start} to ${stop}`);
 
-                // Get energy data at 5-minute intervals throughout the day
-                const data = await this.influxLogger.getEnergyHistory(start, stop, '5m');
+                // Get cumulative energy data at 5-minute intervals throughout the day
+                const data = await this.influxLogger.getCumulativeEnergyToday(start, stop, '5m');
                 console.log(`📊 Retrieved ${data.length} cumulative energy points`);
                 res.json({ success: true, data });
             } catch (error) {

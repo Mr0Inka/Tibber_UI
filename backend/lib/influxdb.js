@@ -162,6 +162,62 @@ class InfluxDBLogger {
         });
     }
 
+    async getCumulativeEnergyToday(start, stop, interval = '5m') {
+        if (!this.connected || !this.queryApi) {
+            throw new Error('InfluxDB not connected');
+        }
+
+        // Get power data at intervals and calculate cumulative energy
+        // This returns running total at each interval
+        const query = `
+            from(bucket: "${config.influxdb.bucket}")
+            |> range(start: ${start}, stop: ${stop})
+            |> filter(fn: (r) => r._measurement == "Power")
+            |> filter(fn: (r) => r._field == "value")
+            |> aggregateWindow(every: ${interval}, fn: mean, createEmpty: false)
+            |> map(fn: (r) => ({ r with _value: r._value / 1000.0 }))
+            |> cumulativeSum()
+            |> map(fn: (r) => ({ r with _value: r._value * (${this.intervalToHours(interval)}) }))
+        `;
+
+        return new Promise((resolve, reject) => {
+            const results = [];
+            this.queryApi.queryRows(query, {
+                next(row, tableMeta) {
+                    const obj = tableMeta.toObject(row);
+                    const value = obj._value;
+                    if (value !== null && value !== undefined && !isNaN(value)) {
+                        results.push({
+                            value: value,
+                            timestamp: obj._time
+                        });
+                    }
+                },
+                error(error) {
+                    console.error('InfluxDB cumulative energy query error:', error);
+                    reject(error);
+                },
+                complete() {
+                    resolve(results);
+                }
+            });
+        });
+    }
+
+    // Helper to convert interval string to hours
+    intervalToHours(interval) {
+        const match = interval.match(/^(\d+)([smh])$/);
+        if (!match) return 1/12; // default 5m
+        const value = parseInt(match[1]);
+        const unit = match[2];
+        switch (unit) {
+            case 's': return value / 3600;
+            case 'm': return value / 60;
+            case 'h': return value;
+            default: return 1/12;
+        }
+    }
+
     async getDailyEnergyHistory(start, stop) {
         if (!this.connected || !this.queryApi) {
             throw new Error('InfluxDB not connected');

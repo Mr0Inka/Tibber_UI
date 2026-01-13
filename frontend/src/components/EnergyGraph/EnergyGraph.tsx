@@ -25,6 +25,11 @@ export function EnergyGraph({ data }: EnergyGraphProps) {
   const chartWidth = width - padding.left - padding.right
   const chartHeight = height - padding.top - padding.bottom
 
+  // Get today's midnight timestamp
+  const now = new Date()
+  const midnightStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime()
+  const midnightEnd = midnightStart + 24 * 60 * 60 * 1000
+
   // Get max value with some headroom
   const values = data.map(d => d.value)
   const maxValue = Math.max(...values, 0.1) * 1.1
@@ -35,12 +40,23 @@ export function EnergyGraph({ data }: EnergyGraphProps) {
     return chartHeight - normalized * chartHeight
   }
 
-  // Create SVG path for the line
-  const points = data.map((d, i) => {
-    const x = (i / (data.length - 1)) * chartWidth
-    const y = valueToY(d.value)
-    return { x, y, value: d.value, timestamp: d.timestamp }
-  })
+  // Convert timestamp to X position (based on time of day)
+  const timeToX = (timestamp: string): number => {
+    const time = new Date(timestamp).getTime()
+    const dayProgress = (time - midnightStart) / (midnightEnd - midnightStart)
+    return Math.max(0, Math.min(1, dayProgress)) * chartWidth
+  }
+
+  // Create SVG path for the line - start from origin (0,0 kWh at midnight)
+  const points = [
+    { x: 0, y: chartHeight, value: 0, timestamp: new Date(midnightStart).toISOString() },
+    ...data.map((d) => ({
+      x: timeToX(d.timestamp),
+      y: valueToY(d.value),
+      value: d.value,
+      timestamp: d.timestamp
+    }))
+  ]
 
   const pathData = points.map((p, i) => 
     `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
@@ -73,17 +89,24 @@ export function EnergyGraph({ data }: EnergyGraphProps) {
     const scaleX = width / rect.width
     const posX = (clientX - rect.left) * scaleX - padding.left
 
-    // Find the closest data point
-    const dataIndex = Math.round((posX / chartWidth) * (data.length - 1))
-    const clampedIndex = Math.max(0, Math.min(data.length - 1, dataIndex))
-    const point = points[clampedIndex]
+    // Find the closest data point (skip the first synthetic point at 0)
+    let closestPoint = points[1]
+    let closestDist = Math.abs(points[1].x - posX)
+    
+    for (let i = 2; i < points.length; i++) {
+      const dist = Math.abs(points[i].x - posX)
+      if (dist < closestDist) {
+        closestDist = dist
+        closestPoint = points[i]
+      }
+    }
 
-    if (point) {
+    if (closestPoint) {
       setHoverData({
-        value: point.value,
-        timestamp: point.timestamp,
-        x: point.x,
-        y: point.y
+        value: closestPoint.value,
+        timestamp: closestPoint.timestamp,
+        x: closestPoint.x,
+        y: closestPoint.y
       })
     }
   }
@@ -172,7 +195,7 @@ export function EnergyGraph({ data }: EnergyGraphProps) {
 
           {/* Area under curve */}
           <path
-            d={`${pathData} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`}
+            d={`${pathData} L ${points[points.length - 1].x} ${chartHeight} L 0 ${chartHeight} Z`}
             fill="url(#energy-gradient)"
           />
 
