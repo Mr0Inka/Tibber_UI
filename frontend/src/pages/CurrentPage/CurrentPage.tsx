@@ -22,7 +22,9 @@ export function CurrentPage({ graphRange, graphData, onRangeChange }: CurrentPag
             <div className="graph-empty">No data available</div>
           )}
         </div>
-        <GraphControls selectedRange={graphRange} onRangeChange={onRangeChange} />
+        <div className="power-graph-controls">
+          <GraphControls selectedRange={graphRange} onRangeChange={onRangeChange} />
+        </div>
       </div>
     </div>
   )

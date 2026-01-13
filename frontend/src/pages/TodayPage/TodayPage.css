@@ -1,20 +1,15 @@
 .energy-graph-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
 }
 
 .energy-graph {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
+  width: 100%;
 }
 
 .graph-empty {
   color: #888;
   font-size: 0.875rem;
   text-align: center;
+  padding: 2rem 0;
 }

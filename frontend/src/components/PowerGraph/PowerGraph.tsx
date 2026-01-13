@@ -20,8 +20,8 @@ export function PowerGraph({ data }: PowerGraphProps) {
   if (data.length === 0) return null
 
   const width = 800
-  const height = 750
-  const padding = { top: 20, right: 10, bottom: 10, left: 10 }
+  const height = 800
+  const padding = { top: 10, right: 10, bottom: 10, left: 10 }
   const chartWidth = width - padding.left - padding.right
   const chartHeight = height - padding.top - padding.bottom
 
@@ -61,9 +61,6 @@ export function PowerGraph({ data }: PowerGraphProps) {
     const date = new Date(timestamp)
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
   }
-
-  // Logarithmic grid lines at powers of 10 (only within visible range)
-  const gridValues = [1, 10, 100, 1000, 10000, 100000].filter(v => v >= minValue && v <= maxValue)
 
   const updateHoverFromPosition = (clientX: number) => {
     if (!svgRef.current || data.length === 0) return
@@ -139,23 +136,6 @@ export function PowerGraph({ data }: PowerGraphProps) {
         </defs>
         
         <g transform={`translate(${padding.left}, ${padding.top})`}>
-          {/* Logarithmic grid lines */}
-          {gridValues.map((value) => {
-            const y = valueToY(value)
-            return (
-              <line
-                key={value}
-                x1={0}
-                y1={y}
-                x2={chartWidth}
-                y2={y}
-                stroke="#e5e5e5"
-                strokeWidth={1}
-                strokeDasharray="2,2"
-              />
-            )
-          })}
-
           {/* Area under curve */}
           <path
             d={`${pathData} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`}

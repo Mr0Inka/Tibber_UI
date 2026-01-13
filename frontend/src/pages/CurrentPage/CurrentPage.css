@@ -1,16 +1,16 @@
 .power-graph-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  gap: 0.5rem;
 }
 
 .power-graph {
-  flex: 1;
+  width: 100%;
+}
+
+.power-graph-controls {
   display: flex;
-  align-items: center;
   justify-content: center;
-  min-height: 0;
 }
 
 .graph-loading,
@@ -18,4 +18,5 @@
   color: #888;
   font-size: 0.875rem;
   text-align: center;
+  padding: 2rem 0;
 }
