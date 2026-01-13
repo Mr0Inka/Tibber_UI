@@ -34,19 +34,32 @@ export function TodayPage({ energyData, yesterdayData }: TodayPageProps) {
     const todayLatest = energyData[energyData.length - 1]?.value
     if (!todayLatest) return null
     
-    // Find yesterday's value at approximately the same time
+    // Find yesterday's value at approximately the same time of day
     const now = new Date()
-    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+    const currentHour = now.getHours()
+    const currentMinute = now.getMinutes()
     
     let yesterdayAtSameTime: number | null = null
+    let closestTimeDiff = Infinity
     
     if (yesterdayData.length > 0) {
       // Find the yesterday data point closest to current time of day
       for (const point of yesterdayData) {
         const pointDate = new Date(point.timestamp)
-        const pointMinutes = pointDate.getHours() * 60 + pointDate.getMinutes()
-        if (pointMinutes <= currentMinutes) {
-          yesterdayAtSameTime = point.value
+        const pointHour = pointDate.getHours()
+        const pointMinute = pointDate.getMinutes()
+        
+        // Calculate time difference in minutes (only consider points before or at current time)
+        const pointTotalMinutes = pointHour * 60 + pointMinute
+        const currentTotalMinutes = currentHour * 60 + currentMinute
+        
+        // Only consider points that are at or before current time of day
+        if (pointTotalMinutes <= currentTotalMinutes) {
+          const timeDiff = currentTotalMinutes - pointTotalMinutes
+          if (timeDiff < closestTimeDiff) {
+            closestTimeDiff = timeDiff
+            yesterdayAtSameTime = point.value
+          }
         }
       }
     }
@@ -60,7 +73,8 @@ export function TodayPage({ energyData, yesterdayData }: TodayPageProps) {
     // Format the values for display
     const todayDisplay = todayLatest.toFixed(2)
     const yesterdayDisplay = yesterdayAtSameTime.toFixed(2)
-    const valuesText = `(${todayDisplay} kWh today vs ${yesterdayDisplay} kWh yesterday)`
+    const timeStr = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`
+    const valuesText = `(${todayDisplay} kWh today vs ${yesterdayDisplay} kWh yesterday @ ~${timeStr})`
     
     // Pick a random template (changes every minute)
     const seed = Math.floor(Date.now() / 60000)
