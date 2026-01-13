@@ -105,27 +105,28 @@
   margin-top: 8px;
 }
 
-/* Today: solid orange background */
+/* Today: light grey background, orange text */
 .day-value.today {
-  background: #f97316;
-  color: white;
-}
-
-/* Past days with data: light grey background, orange text */
-.day-value.past-has-data {
   background: #f3f4f6;
   color: #f97316;
+  font-weight: 700;
 }
 
-/* Past days without data: greyed out */
+/* Past days with data: light grey background, black text */
+.day-value.past-has-data {
+  background: #f3f4f6;
+  color: #333;
+}
+
+/* Past days without data: light grey, greyed out text */
 .day-value.past-no-data {
-  background: #e5e7eb;
-  color: #999;
+  background: #f3f4f6;
+  color: #ccc;
 }
 
-/* Future days: greyed out, no value */
+/* Future days: light grey, no value */
 .day-value.future {
-  background: #e5e7eb;
+  background: #f3f4f6;
   color: transparent;
   min-height: 1.2rem;
 }

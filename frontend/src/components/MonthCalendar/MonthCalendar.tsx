@@ -142,12 +142,13 @@ interface MonthCalendarListProps {
 export function MonthCalendarList({ dailyEnergyHistory }: MonthCalendarListProps) {
   // Create a map of date -> value for quick lookup
   const dailyDataMap = new Map<string, number>()
+  
+  console.log('📊 Raw daily energy history:', dailyEnergyHistory)
+  
   dailyEnergyHistory.forEach(entry => {
-    // InfluxDB aggregateWindow returns timestamp at END of window
-    // So we need to subtract 1 day to get the actual day
     const date = new Date(entry.timestamp)
-    date.setUTCDate(date.getUTCDate() - 1)
-    const dateKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`
+    // Use local date (not UTC) since that's what the calendar displays
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     dailyDataMap.set(dateKey, entry.value)
     console.log(`📅 ${entry.timestamp} -> ${dateKey} = ${entry.value.toFixed(2)} kWh`)
   })
