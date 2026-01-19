@@ -162,7 +162,7 @@ class TibberClient {
             try {
                 // Remove all listeners to prevent duplicate events
                 oldFeed.removeAllListeners();
-                
+
                 if (typeof oldFeed.close === 'function') {
                     oldFeed.close();
                 } else if (typeof oldFeed.disconnect === 'function') {
