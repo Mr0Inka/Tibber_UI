@@ -10,18 +10,16 @@ class TibberClient {
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 10;
         this.reconnectDelay = 5000; // Start with 5 seconds
-        this.isConnecting = false;
+        this.isConnected = false;
+        this.reconnectTimeout = null;
         this.lastDataTime = null;
         this.healthCheckInterval = null;
     }
 
-    connect() {
-        if (this.isConnecting) {
-            console.log('⏳ Already attempting to connect...');
-            return;
-        }
+    async connect() {
+        // Clean up any existing connection first
+        await this.cleanup();
 
-        this.isConnecting = true;
         console.log('🔌 Connecting to Tibber...');
 
         try {
@@ -32,44 +30,71 @@ class TibberClient {
             this.tibberFeed.connect();
         } catch (error) {
             console.error('❌ Failed to create Tibber connection:', error.message);
-            this.isConnecting = false;
             this.scheduleReconnect();
         }
     }
 
     setupEventHandlers() {
-        this.tibberFeed.on('connected', () => {
+        // Store reference to current feed to check if events are from current connection
+        const currentFeed = this.tibberFeed;
+
+        currentFeed.on('connected', () => {
+            // Ignore if this is from an old connection
+            if (currentFeed !== this.tibberFeed) {
+                console.log('⚠️ Ignoring connected event from old connection');
+                return;
+            }
+
             console.log('✅ Tibber websocket connected');
+            this.isConnected = true;
             this.reconnectAttempts = 0;
             this.reconnectDelay = 5000;
-            this.isConnecting = false;
             this.lastDataTime = Date.now();
+
+            // Clear any pending reconnect
+            if (this.reconnectTimeout) {
+                clearTimeout(this.reconnectTimeout);
+                this.reconnectTimeout = null;
+            }
 
             // Start health check
             this.startHealthCheck();
         });
 
-        this.tibberFeed.on('disconnected', (reason) => {
+        currentFeed.on('disconnected', (reason) => {
+            // Ignore if this is from an old connection
+            if (currentFeed !== this.tibberFeed) {
+                console.log('⚠️ Ignoring disconnected event from old connection');
+                return;
+            }
+
             console.log('🔌 Tibber websocket disconnected:', reason || 'unknown reason');
-            this.isConnecting = false;
+            this.isConnected = false;
             this.stopHealthCheck();
             this.scheduleReconnect();
         });
 
-        this.tibberFeed.on('error', (error) => {
+        currentFeed.on('error', (error) => {
+            // Ignore if this is from an old connection
+            if (currentFeed !== this.tibberFeed) {
+                return;
+            }
             console.error('❌ Tibber error:', error.message || error);
-            // Don't immediately reconnect on error, wait for disconnect event
-            // But if we're stuck, the health check will catch it
         });
 
-        this.tibberFeed.on('data', (data) => {
+        currentFeed.on('data', (data) => {
+            // Ignore if this is from an old connection
+            if (currentFeed !== this.tibberFeed) {
+                console.log('⚠️ Ignoring data from old connection');
+                return;
+            }
+
             this.lastDataTime = Date.now();
             displayData(data, this.influxLogger);
         });
     }
 
     startHealthCheck() {
-        // Check every 2 minutes if we're still receiving data
         this.stopHealthCheck();
         this.healthCheckInterval = setInterval(() => {
             const now = Date.now();
@@ -78,7 +103,7 @@ class TibberClient {
             // If no data for 3 minutes, something is wrong
             if (timeSinceLastData > 3 * 60 * 1000) {
                 console.warn(`⚠️ No data received for ${Math.round(timeSinceLastData / 1000)}s, forcing reconnect...`);
-                this.forceReconnect();
+                this.connect(); // This will cleanup first
             }
         }, 2 * 60 * 1000); // Check every 2 minutes
     }
@@ -91,9 +116,15 @@ class TibberClient {
     }
 
     scheduleReconnect() {
+        // Don't schedule if already scheduled
+        if (this.reconnectTimeout) {
+            return;
+        }
+
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
             console.error(`❌ Max reconnect attempts (${this.maxReconnectAttempts}) reached. Waiting 5 minutes before trying again...`);
-            setTimeout(() => {
+            this.reconnectTimeout = setTimeout(() => {
+                this.reconnectTimeout = null;
                 this.reconnectAttempts = 0;
                 this.reconnectDelay = 5000;
                 this.connect();
@@ -102,56 +133,52 @@ class TibberClient {
         }
 
         this.reconnectAttempts++;
-        const delay = Math.min(this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1), 60000); // Max 60 seconds
+        const delay = Math.min(this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1), 60000);
 
         console.log(`🔄 Reconnecting in ${Math.round(delay / 1000)}s (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
 
-        setTimeout(() => {
+        this.reconnectTimeout = setTimeout(() => {
+            this.reconnectTimeout = null;
             this.connect();
         }, delay);
     }
 
-    forceReconnect() {
-        console.log('🔄 Forcing reconnection...');
+    async cleanup() {
         this.stopHealthCheck();
-        this.isConnecting = false;
+        this.isConnected = false;
 
-        // Try to close existing connection safely
-        try {
-            if (this.tibberFeed) {
-                if (typeof this.tibberFeed.close === 'function') {
-                    this.tibberFeed.close();
-                } else if (typeof this.tibberFeed.disconnect === 'function') {
-                    this.tibberFeed.disconnect();
-                }
-            }
-        } catch (e) {
-            console.log('⚠️ Error closing existing connection:', e.message);
+        // Clear pending reconnect
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
         }
 
-        // Clear references
-        this.tibberFeed = null;
-        this.tibberQuery = null;
+        // Close existing connection
+        if (this.tibberFeed) {
+            const oldFeed = this.tibberFeed;
+            this.tibberFeed = null; // Clear reference first to ignore future events
+            this.tibberQuery = null;
 
-        // Reconnect after a short delay
-        setTimeout(() => {
-            this.connect();
-        }, 2000);
+            try {
+                // Remove all listeners to prevent duplicate events
+                oldFeed.removeAllListeners();
+                
+                if (typeof oldFeed.close === 'function') {
+                    oldFeed.close();
+                } else if (typeof oldFeed.disconnect === 'function') {
+                    oldFeed.disconnect();
+                }
+            } catch (e) {
+                console.log('⚠️ Error closing old connection:', e.message);
+            }
+
+            // Wait a bit for the old connection to fully close
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
     }
 
-    disconnect() {
-        this.stopHealthCheck();
-        try {
-            if (this.tibberFeed) {
-                if (typeof this.tibberFeed.close === 'function') {
-                    this.tibberFeed.close();
-                } else if (typeof this.tibberFeed.disconnect === 'function') {
-                    this.tibberFeed.disconnect();
-                }
-            }
-        } catch (e) {
-            console.log('⚠️ Error during disconnect:', e.message);
-        }
+    async disconnect() {
+        await this.cleanup();
     }
 }
 
