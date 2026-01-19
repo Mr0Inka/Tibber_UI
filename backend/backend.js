@@ -15,6 +15,18 @@ api.start();
 const client = new TibberClient(influxLogger);
 client.connect();
 
+// Handle uncaught exceptions - log but don't crash
+process.on('uncaughtException', (error) => {
+    console.error('❌ Uncaught exception:', error.message);
+    console.error(error.stack);
+    // Don't exit - let the app try to recover
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled rejection at:', promise, 'reason:', reason);
+    // Don't exit - let the app try to recover
+});
+
 // Graceful shutdown
 process.on('SIGINT', () => {
     console.log('\n🛑 Shutting down...');
