@@ -44,7 +44,7 @@ class TibberClient {
             this.reconnectDelay = 5000;
             this.isConnecting = false;
             this.lastDataTime = Date.now();
-            
+
             // Start health check
             this.startHealthCheck();
         });
@@ -74,7 +74,7 @@ class TibberClient {
         this.healthCheckInterval = setInterval(() => {
             const now = Date.now();
             const timeSinceLastData = now - (this.lastDataTime || 0);
-            
+
             // If no data for 3 minutes, something is wrong
             if (timeSinceLastData > 3 * 60 * 1000) {
                 console.warn(`⚠️ No data received for ${Math.round(timeSinceLastData / 1000)}s, forcing reconnect...`);
@@ -103,9 +103,9 @@ class TibberClient {
 
         this.reconnectAttempts++;
         const delay = Math.min(this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1), 60000); // Max 60 seconds
-        
+
         console.log(`🔄 Reconnecting in ${Math.round(delay / 1000)}s (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-        
+
         setTimeout(() => {
             this.connect();
         }, delay);
@@ -115,7 +115,7 @@ class TibberClient {
         console.log('🔄 Forcing reconnection...');
         this.stopHealthCheck();
         this.isConnecting = false;
-        
+
         // Try to close existing connection safely
         try {
             if (this.tibberFeed) {
@@ -128,11 +128,11 @@ class TibberClient {
         } catch (e) {
             console.log('⚠️ Error closing existing connection:', e.message);
         }
-        
+
         // Clear references
         this.tibberFeed = null;
         this.tibberQuery = null;
-        
+
         // Reconnect after a short delay
         setTimeout(() => {
             this.connect();
